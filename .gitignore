@@ -2,6 +2,17 @@
 __pycache__/
 *.py[codz]
 *$py.class
+#specific file
+
+bgpalerter/bgpalerter-linux-x64
+bgpalerter/bgpalerter-linux-x64:Zone.Identifier
+bgpalerter/bgpalerter.pid
+bgpalerter/logs
+bgpalerter/cache
+
+
+
+
 
 # C extensions
 *.so
@@ -205,3 +216,4 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
