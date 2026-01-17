@@ -21,7 +21,7 @@ def start_bgpalerter():
     # 以后台进程方式启动
     process = subprocess.Popen(
         [BGPALERTER_PATH],
-        cwd=working_dir,
+        cwd=working_dir, 
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True
