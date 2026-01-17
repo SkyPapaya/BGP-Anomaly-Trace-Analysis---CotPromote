@@ -9,9 +9,9 @@ from tools.bgp_toolkit import BGPToolKit
 # --- 配置 ---
 API_KEY = "sk-9944c48494394db6b8bc31b40f8a710f"
 BASE_URL = "https://api.deepseek.com"
-round = 1
 
 class BGPAgent:
+    
     def __init__(self):
         self.client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
         self.toolkit = BGPToolKit()
@@ -64,7 +64,8 @@ class BGPAgent:
         current_time = datetime.now(timezone.utc)
 
         """将完整的思维链保存到本地文件"""
-        filename = "./report/diagnosis_trace_"+ current_time.strftime("%Y-%m-%d_%H:%M:%S")+f"{round}"+".json"
+        #filename = "./report/diagnosis_trace_"+ current_time.strftime("%Y-%m-%d_%H:%M:%S")+f"{time}"+".json"
+        filename = "./report/diagnosis_trace_"+ current_time.strftime("%Y-%m-%d_%H:%M:%S")+".json"
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(trace_data, f, indent=4, ensure_ascii=False)
         return filename
@@ -86,9 +87,10 @@ class BGPAgent:
             "rounds": []
         }
 
+        
         # 2. 开始三层追问循环
         for round_idx in range(1, 4):
-            round =round + 1
+            
             print(f"\n--- Round {round_idx}/3 (Layer {round_idx}) ---")
             
             # --- STEP 1: AI 思考 ---
@@ -106,6 +108,7 @@ class BGPAgent:
                 "tool_output": None
             })
             self._save_trace(full_trace) # 实时保存
+           
 
             # --- STEP 2: 检查是否得出结论 ---
             final_decision = response_json.get("final_decision")
