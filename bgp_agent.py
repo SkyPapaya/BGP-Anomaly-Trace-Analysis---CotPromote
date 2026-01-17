@@ -1,135 +1,161 @@
 import asyncio
 import json
 import re
+import os
+from datetime import datetime , timezone
 from openai import AsyncOpenAI
-from tools.bgp_toolkit import BGPToolKit  # 导入刚才做好的工具箱
+from tools.bgp_toolkit import BGPToolKit
 
 # --- 配置 ---
 API_KEY = "sk-9944c48494394db6b8bc31b40f8a710f"
 BASE_URL = "https://api.deepseek.com"
+round = 1
 
 class BGPAgent:
     def __init__(self):
         self.client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
         self.toolkit = BGPToolKit()
         
-        # 定义系统人设和可用工具说明
+        # 定义核心人设 (System Prompt)
         self.system_prompt = """
-你是一个高级 BGP 安全分析专家 (Agent)。你的任务是对 BGP 异常告警进行根因分析 (RCA)。
-你拥有以下工具箱，请根据需要申请调用工具来验证你的假设：
+你是一个 BGP 安全专家 Agent。你的目标是通过多轮排查，确定一个 BGP 更新是否为恶意劫持。
+你拥有以下工具：
+1. `authority_check`: 查询 RPKI 状态 (验证授权)。
+2. `geo_check`: 对比 IP 和 ASN 的地理位置 (验证跨国冲突)。
+3. `neighbor_check`: 查询传播路径的上游邻居 (验证传播范围)。
+4. `topology_check`: 检查商业关系逻辑 (验证路由泄露)。
+5. `stability_analysis`: 检查前缀更新历史 (验证震荡)。
 
-1. `authority_check`: 查询 RPKI/ROA 授权状态 (检测非法宣告)。
-2. `geo_check`: 检测 IP 与 Origin AS 的地理位置冲突 (检测跨国劫持)。
-3. `neighbor_check`: 分析传播该路由的上游邻居 (Tier-1/ISP)。
-4. `topology_check`: 检查 AS 路径是否违背商业逻辑 (Valley-Free)。
-5. `stability_analysis`: 查询该前缀的历史更新频率。
+**工作流程：**
+这是一个 3 轮的对话。每一轮你都需要根据当前的已知信息，决定下一步行动。
 
-**交互规则：**
-1. 每次回复必须严格遵循 JSON 格式。
-2. 即使你认为证据已经足够，也必须输出 JSON。
-3. 这是一个多轮对话，你会分阶段获取信息。
-
-**JSON 输出格式要求：**
+**输出格式要求 (必须是 JSON)：**
 {
-    "thought_process": "简述你当前的分析思路...",
-    "needs_more_evidence": true/false,
-    "tool_requests": ["tool_name1", "tool_name2"],  // 如果不需要工具，填 []
-    "final_diagnosis": {                             // 仅当 needs_more_evidence 为 false 时填写
-        "status": "MALICIOUS_HIJACK" | "CONFIGURATION_ERROR" | "BENIGN",
-        "confidence_score": 0-100,
-        "summary": "最终的根因分析报告..."
+    "round_id": int,                 // 当前是第几轮 (1, 2, or 3)
+    "thought_process": "string",     // 详细的思维链：你看到了什么？你怀疑什么？为什么？
+    "suspicion_level": "low/medium/high", 
+    "missing_info": "string",        // 你觉得还缺什么证据？
+    "tool_request": "string",        // 你决定调用的工具名 (一次只调一个，若无需工具填 null)
+    "final_decision": {              // 仅在第 3 轮或证据确凿时填写，否则为 null
+        "status": "MALICIOUS" | "BENIGN" | "UNKNOWN",
+        "summary": "最终结论..."
     }
 }
 """
 
     async def _call_llm(self, messages):
-        """调用 DeepSeek 并解析 JSON"""
+        """发送当前所有对话历史给 DeepSeek"""
         try:
+            print("⏳ 正在请求 DeepSeek 思考...", end="", flush=True)
             response = await self.client.chat.completions.create(
                 model="deepseek-chat",
                 messages=messages,
-                response_format={'type': 'json_object'}, # 强制 JSON 模式
-                temperature=0.1 # 降低随机性，保证逻辑严密
+                response_format={'type': 'json_object'},
+                temperature=0.1
             )
+            print(" ✅ 完成")
             content = response.choices[0].message.content
-            # 清洗可能存在的 markdown 标记
-            content = re.sub(r"```json|```", "", content).strip()
             return json.loads(content)
         except Exception as e:
-            print(f"❌ LLM 调用或解析失败: {e}")
+            print(f"\n❌ API 调用失败: {e}")
             return None
 
+    def _save_trace(self, trace_data):
+        current_time = datetime.now(timezone.utc)
+
+        """将完整的思维链保存到本地文件"""
+        filename = "./report/diagnosis_trace_"+ current_time.strftime("%Y-%m-%d_%H:%M:%S")+f"{round}"+".json"
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(trace_data, f, indent=4, ensure_ascii=False)
+        return filename
+
     async def diagnose(self, alert_context):
-        """执行三层追问诊断流程"""
-        print(f"\n🛡️  [Agent 启动] 开始诊断前缀: {alert_context['prefix']}")
+        print(f"\n🛡️  [Agent] 开始诊断前缀: {alert_context['prefix']}")
+        print(f"📄 原始 AS_PATH: {alert_context['as_path']}")
         
-        # 初始化对话历史
+        # 1. 初始化记忆 (Memory)
         messages = [
             {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": f"检测到异常 BGP 更新：{json.dumps(alert_context)}。请开始分析。"}
+            {"role": "user", "content": f"【系统告警】检测到异常路由更新：\n{json.dumps(alert_context, indent=2)}\n请开始第 1 轮分析。"}
         ]
-
-        # 最多进行 3 轮追问 (防止死循环)
-        max_rounds = 3
         
-        for round_idx in range(1, max_rounds + 1):
-            print(f"\n--- 第 {round_idx} 轮思考 (Layer {round_idx}) ---")
+        # 用于保存到本地的完整记录
+        full_trace = {
+            "target": alert_context,
+            "start_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "rounds": []
+        }
+
+        # 2. 开始三层追问循环
+        for round_idx in range(1, 4):
+            round =round + 1
+            print(f"\n--- Round {round_idx}/3 (Layer {round_idx}) ---")
             
-            # 1. AI 思考
+            # --- STEP 1: AI 思考 ---
             response_json = await self._call_llm(messages)
             if not response_json: break
             
-            print(f"🧠 思维链: {response_json.get('thought_process')}")
-
-            # 2. 判断是否结束
-            if not response_json.get("needs_more_evidence", False):
-                print("✅ 诊断完成，生成最终报告。")
-                return response_json.get("final_diagnosis")
-
-            # 3. 执行工具调用 (Action)
-            tools_to_run = response_json.get("tool_requests", [])
-            if not tools_to_run:
-                print("⚠️ AI 表示需要证据但未指定工具，强制结束。")
-                break
-
-            tool_outputs = []
-            print(f"🛠️  AI 申请调用工具: {tools_to_run}")
+            # 打印 AI 的思考过程
+            print(f"🧠 AI 想法: {response_json.get('thought_process')}")
+            print(f"🔍 怀疑等级: {response_json.get('suspicion_level')}")
             
-            for tool_name in tools_to_run:
-                # 实际调用 bgp_toolkit
-                result = self.toolkit.call_tool(tool_name, alert_context)
-                print(f"    -> {result}")
-                tool_outputs.append(result)
+            # 记录到本地 Trace
+            full_trace["rounds"].append({
+                "round": round_idx,
+                "ai_response": response_json,
+                "tool_output": None
+            })
+            self._save_trace(full_trace) # 实时保存
 
-            # 4. 将工具结果反馈给 AI (Observation)
-            feedback_msg = f"工具执行结果如下：\n" + "\n".join(tool_outputs) + "\n请根据这些新证据继续分析。"
+            # --- STEP 2: 检查是否得出结论 ---
+            final_decision = response_json.get("final_decision")
+            if final_decision:
+                print(f"\n🎉 诊断结束！结论已生成。")
+                return final_decision
+
+            # --- STEP 3: 执行工具 (Action) ---
+            tool_name = response_json.get("tool_request")
+            tool_result = "未请求工具，请直接进行下一轮推断。"
+            
+            if tool_name:
+                print(f"🛠️  调用工具: {tool_name} ...", end="")
+                tool_output_raw = self.toolkit.call_tool(tool_name, alert_context)
+                print(f" -> 返回结果")
+                print(f"    📄 {tool_output_raw}")
+                
+                # 格式化工具结果
+                tool_result = f"【工具 {tool_name} 运行结果】:\n{tool_output_raw}"
+                
+                # 更新本地 Trace
+                full_trace["rounds"][-1]["tool_output"] = tool_output_raw
+                self._save_trace(full_trace)
+
+            # --- STEP 4: 更新上下文 (Memory) ---
+            # 将 AI 的回复加入历史 (Assistant 角色)
             messages.append({"role": "assistant", "content": json.dumps(response_json)})
-            messages.append({"role": "user", "content": feedback_msg})
-
+            # 将工具的结果加入历史 (User 角色，模拟外界反馈)
+            messages.append({"role": "user", "content": f"{tool_result}\n\n现在请基于以上新证据，进行第 {round_idx + 1} 轮分析。"})
+            
         return None
 
-# --- 测试入口 ---
+# --- 主程序 ---
 if __name__ == "__main__":
-    # 模拟 Twitter 2022 真实劫持数据
-    # AS12389 (Rostelecom) 劫持 AS13414 (Twitter)
+    # 模拟数据
     test_alert = {
         "prefix": "104.244.42.0/24",
-        "as_path": "174 12389",  # Cogent -> Rostelecom
+        "as_path": "174 12389",
         "timestamp": 1648474800,
         "anomaly_score": 0.85
     }
-
     agent = BGPAgent()
-    
-    # 运行异步任务
+
     loop = asyncio.get_event_loop()
     final_report = loop.run_until_complete(agent.diagnose(test_alert))
 
     if final_report:
         print("\n" + "="*40)
-        print("📝 最终 RCA 报告 (Root Cause Analysis)")
+        print("📝 最终 RCA 报告")
         print("="*40)
-        print(f"判定状态: {final_report['status']}")
-        print(f"置信度:   {final_report['confidence_score']}/100")
-        print(f"详细总结: {final_report['summary']}")
-        print("="*40)
+        print(f"判定: {final_report['status']}")
+        print(f"总结: {final_report['summary']}")
+        print(f"\n✅ 完整思维链已保存至: diagnosis_trace.json")
