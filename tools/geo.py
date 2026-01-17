@@ -1,4 +1,4 @@
-from data_provider import BGPDataProvider
+from .data_provider import BGPDataProvider
 
 class GeoConflictChecker:
     def run(self, context):

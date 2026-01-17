@@ -1,6 +1,6 @@
 #拓扑与泄露检测
 # tools/topology.py
-from data_provider import BGPDataProvider
+from .data_provider import BGPDataProvider
 
 class TopologyInspector:
     # 知名 Tier-1 AS 列表 (硬编码以提高速度)

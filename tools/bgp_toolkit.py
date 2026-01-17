@@ -1,10 +1,10 @@
 #统一调用接口
 # bgp_toolkit.py
-from authority import AuthorityValidator
-from geo import GeoConflictChecker
-from topology import TopologyInspector
-from neighbor import NeighborPropagator
-from stability import StabilityAnalyzer
+from .authority import AuthorityValidator
+from .geo import GeoConflictChecker
+from .topology import TopologyInspector
+from .neighbor import NeighborPropagator
+from .stability import StabilityAnalyzer
 
 class BGPToolKit:
     def __init__(self):

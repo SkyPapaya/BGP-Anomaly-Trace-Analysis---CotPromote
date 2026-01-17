@@ -1,4 +1,4 @@
-from data_provider import BGPDataProvider
+from .data_provider import BGPDataProvider
 
 class AuthorityValidator:
     # 历史真值表 (作为双重保险)

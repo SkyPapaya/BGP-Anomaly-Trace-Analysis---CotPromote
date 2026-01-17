@@ -4,7 +4,7 @@ def collect_code(root_dir, output_file):
     # 定义需要收集的文件后缀
     include_extensions = ('.py', '.sh', '.cpp', '.h', '.yaml', '.yml', '.json', '.md')
     # 定义需要忽略的文件夹
-    exclude_dirs = {'.git', '__pycache__', '.vscode', 'venv', 'node_modules', 'data', 'mrt_data'}
+    exclude_dirs = {'.git', '__pycache__', '.vscode', 'venv', 'node_modules', 'data', 'mrt_data','libbgpstream-2.2.0','wandio-4.2.6-1'}
 
     with open(output_file, 'w', encoding='utf-8') as f_out:
         for root, dirs, files in os.walk(root_dir):

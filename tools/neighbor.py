@@ -1,5 +1,5 @@
 # 邻居传播分析
-from data_provider import BGPDataProvider
+from .data_provider import BGPDataProvider
 
 class NeighborPropagator:
     def run(self, context):
