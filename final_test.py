@@ -1,37 +1,43 @@
 import asyncio
+import json
 from bgp_agent import BGPAgent
 
-async def main():
-    print(">>> 启动 BGP Agent 综合测试 (Powered by RIPEstat) <<<\n")
-    
-    # 场景 1: Twitter 劫持 (真实案例复现)
-    # 预期: MALICIOUS
-    hijack_case = {
+# --- 盲测数据集 ---
+TEST_SUITE = [
+    {
+        # Case 1: 真实劫持 (Twitter / Rostelecom)
         "prefix": "104.244.42.0/24",
-        "as_path": "174 12389",  # Cogent -> Rostelecom
-        "description": "Twitter Hijack by Rostelecom"
-    }
-
-    # 场景 2: Google 正常流量
-    # 预期: BENIGN
-    normal_case = {
+        "as_path": "174 12389", 
+        "timestamp": 1648474800
+    },
+    {
+        # Case 2: 正常流量 (Google)
         "prefix": "8.8.8.0/24",
-        "as_path": "3356 15169", # Level3 -> Google
-        "description": "Google DNS Normal Traffic"
+        "as_path": "3356 15169",
+        "timestamp": 1678888888
     }
+]
 
+async def run_blind_test():
+    # 实例化 Agent (它知道报告该存哪)
     agent = BGPAgent()
-
-    # 运行 劫持案例
-    print(f"🚨 测试案例 A: {hijack_case['description']}")
-    await agent.diagnose(hijack_case)
     
-    print("\n--------------------------------------------------\n")
-
-    # 运行 正常案例
-    print(f"✅ 测试案例 B: {normal_case['description']}")
-    await agent.diagnose(normal_case)
+    print(f"🚀 启动 BGP Agent 盲测...\n")
+    
+    for i, case in enumerate(TEST_SUITE):
+        print(f"Dataset #{i+1} Testing [Prefix: {case['prefix']}] ... ", end="", flush=True)
+        
+        # 只管调用，不管保存 (Agent 内部会处理)
+        final_trace = await agent.diagnose(case, verbose=True)
+        
+        print("Done ✅")
+        
+        # 简单打印一下结论确认
+        result = final_trace.get("final_result", {})
+        status = result.get("status") if result else "无法判断"
+        print(f"   -> Agent 结论: {status}")
+        print("-" * 60)
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    loop.run_until_complete(run_blind_test())
