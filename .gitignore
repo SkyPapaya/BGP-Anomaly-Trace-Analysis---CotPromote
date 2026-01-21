@@ -5,11 +5,12 @@ __pycache__/
 #specific file
 wandio-4.2.6-1
 libbgpstream-2.2.0
+rag_db
 
 #data
 *.json
 *.jsonl
-
+*.gz
 
 # C extensions
 *.so
