@@ -3,16 +3,19 @@ __pycache__/
 *.py[codz]
 *$py.class
 #specific file
+wandio-4.2.6-1
+libbgpstream-2.2.0
+rag_db
+rag_db_new
+*.bin
+*.bz2
+*.txt
 
-bgpalerter/bgpalerter-linux-x64
-bgpalerter/bgpalerter-linux-x64:Zone.Identifier
-bgpalerter/bgpalerter.pid
-bgpalerter/logs
-bgpalerter/cache
 
-
-
-
+#data
+*.json
+*.jsonl
+*.gz
 
 # C extensions
 *.so
