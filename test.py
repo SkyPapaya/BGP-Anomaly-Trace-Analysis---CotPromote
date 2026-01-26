@@ -45,7 +45,7 @@ def run_comprehensive_test():
                 print("✅ 成功")
 
         except Exception as e:
-            print(f"❌ 严重错误: {e}")
+            print(f"❌ 出现严重错误: {e}")
 
 if __name__ == "__main__":
     run_comprehensive_test()
