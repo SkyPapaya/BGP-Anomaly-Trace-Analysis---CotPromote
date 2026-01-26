@@ -6,6 +6,11 @@ __pycache__/
 wandio-4.2.6-1
 libbgpstream-2.2.0
 rag_db
+rag_db_new
+*.bin
+*.bz2
+*.txt
+
 
 #data
 *.json

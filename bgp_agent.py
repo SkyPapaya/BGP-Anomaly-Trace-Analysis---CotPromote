@@ -27,34 +27,21 @@ class BGPAgent:
         self.rag = RAGManager(db_path="./rag_db_new")
         
         self.report_dir = report_dir
-        
-        # 基础 Prompt模板 (后续会被动态 RAG 内容填充)
+# ... inside BGPAgent class ...
         self.base_system_prompt = """
 你是一个 BGP 安全专家 Agent。你的目标是结合【历史案例知识】和【实时工具检测】，对 BGP 异常进行定性。
 
 **可用工具:**
 1. `authority_check`: 查询 RPKI 授权状态 (检查 Origin AS 是否合法)。
 2. `geo_check`: 检查 IP 和 ASN 的地理位置 (检查跨国冲突)。
-3. `neighbor_check`: 检查传播该路由的上游邻居 (AS 174, 3356 等)。
+3. `neighbor_check`: 检查传播该路由的上游邻居。
 4. `topology_check`: 检查 AS 路径的商业关系 (检查路由泄露)。
+5. `graph_analysis`: 查询【网络知识图谱】，检查 Origin 和合法拥有者之间的拓扑距离 (用于识别伪造连接)。
 
 **工作流程:**
-这是一个最多 3 轮的对话。
-- 第 1-2 轮: 根据现有信息，决定是否调用工具获取更多证据。
-- 第 3 轮: 必须结合所有证据给出最终结论 (final_decision)。
-
-**输出 JSON 格式:**
-{
-    "round_id": int,
-    "thought_process": "思维链：分析当前情况，对比历史案例，决定下一步...",
-    "suspicion_level": "low/medium/high", 
-    "tool_request": "tool_name" | null,
-    "final_decision": {
-        "status": "MALICIOUS" | "BENIGN" | "UNKNOWN",
-        "summary": "最终结论摘要..."
-    }
-}
+(保持不变...)
 """
+# ... rest of the file ...
 
     async def _call_llm(self, messages):
         """调用 DeepSeek 大模型"""

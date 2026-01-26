@@ -170,7 +170,7 @@ class BGPStreamPipeline:
 
 if __name__ == "__main__":
     pipeline = BGPStreamPipeline()
-    local_files = "/home/skypapaya/code/BGP-Anomaly-Trace-Analysis---CotPromote/data/updates*.gz"
+    local_files = "/home/code/BGP-Anomaly-Trace-Analysis---CotPromote/data/updates*.bz2"
     
     loop = asyncio.get_event_loop()
     loop.run_until_complete(pipeline.run_offline_replay(local_files))
