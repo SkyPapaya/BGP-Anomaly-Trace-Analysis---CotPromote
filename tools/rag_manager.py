@@ -29,40 +29,64 @@ class RAGManager:
         )
         logger.info(f"RAG 引擎就绪 | 数据库路径: {db_path}")
 
+    # tools/rag_manager.py 中替换该函数
+
     def load_knowledge_base(self, json_path):
         if not os.path.exists(json_path):
             logger.error(f"文件未找到: {json_path}")
             return
 
-        with open(json_path, 'r', encoding='utf-8') as f:
-            cases = json.load(f)
+        # 兼容 JSON 和 JSONL
+        cases = []
+        if json_path.endswith('.jsonl'):
+            with open(json_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if line.strip():
+                        cases.append(json.loads(line))
+        else:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                cases = json.load(f)
 
         logger.info(f"正在导入 {len(cases)} 条数据...")
         
         ids = []
         documents = []
         metadatas = []
+        
+        # --- 新增：ID 去重集合 ---
+        seen_ids = set()
 
         for case in cases:
-            # 存入向量库的文本
+            # 获取原始 ID
+            curr_id = case.get('id', f"auto_{len(ids)}")
+            
+            # --- 核心修复：如果 ID 已存在，自动添加随机后缀 ---
+            original_id = curr_id
+            retry_count = 0
+            while curr_id in seen_ids:
+                retry_count += 1
+                curr_id = f"{original_id}_{retry_count}"
+            
+            seen_ids.add(curr_id)
+            # -----------------------------------------------
+
             doc_text = f"{case['scenario_desc']}"
             
-            # 存入元数据
             meta = {
                 "type": case['type'],
                 "analysis": case['analysis'],
                 "conclusion": case['conclusion'],
-                # 兼容 chroma 对 metadata 的限制 (值只能是 str/int/float/bool)
                 "full_json": json.dumps(case, ensure_ascii=False) 
             }
 
-            ids.append(case['id'])
+            ids.append(curr_id)
             documents.append(doc_text)
             metadatas.append(meta)
 
         if ids:
+            # 这里的 upsert 如果遇到数据库里已有的 ID 会覆盖，但在 ids 列表内部必须唯一
             self.collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
-            logger.info("✅ 知识库导入完成！")
+            logger.info(f"✅ 知识库导入完成！(共处理 {len(ids)} 条，已自动修复重复ID)")
 
     def search_similar_cases(self, alert_context, k=2):
         # 构建查询语句

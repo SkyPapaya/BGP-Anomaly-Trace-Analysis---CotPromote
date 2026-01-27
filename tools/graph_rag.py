@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger("Neo4j_RAG")
 
 class BGPGraphRAG:
-    def __init__(self, uri="bolt://localhost:7687", user="neo4j", password="password"):
+    def __init__(self, uri="bolt://localhost:7687", user="neo4j", password="whm161122309"):
         """
         初始化 Neo4j 连接并注入初始数据
         """
