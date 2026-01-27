@@ -1,66 +1,56 @@
-import json
 import os
 import sys
 import shutil
 
-# 1. 确保能导入 tools 包 (解决路径问题)
+# 确保能导入 tools 包
 sys.path.append(os.getcwd())
-
 from tools.rag_manager import RAGManager
 
 def build_db():
-    # --- 配置区域 ---
-    # 输入文件: 你刚才生成的 500 条大 JSON 文件
-    # (如果你生成的文件名不同，请修改这里)
-    json_path = "data/synthetic_cases_hijack.json" 
+    # ================= 配置区域 =================
+    # 1. 输入数据: 必须是你刚才生成的溯源数据 (.jsonl)
+    json_path = "data/forensics_cases.jsonl"
     
-    # 输出数据库: Agent 读取的目录 
+    # 2. 输出路径: 必须与 bgp_agent.py 里的设置一致
+    db_path = "./rag_db"
+    # ===========================================
 
-    db_path = "./rag_db" 
-
-    # ----------------
-
-    # 1. 检查数据源是否存在
+    # 检查输入文件
     if not os.path.exists(json_path):
         print(f"❌ 错误: 找不到数据文件 {json_path}")
-        print("   -> 请检查文件路径是否正确，或是否已运行生成脚本。")
+        print("   -> 请先运行: python tools/gen_forensics_data.py")
         return
 
-    # 2. 清理旧数据库 
-    # (为了保证数据库里只有最新的 500 条数据，建议先删掉旧的)
+    # 清理旧数据库 (强制删除旧文件夹，防止脏数据干扰)
     if os.path.exists(db_path):
-        print(f"🧹 发现旧数据库，正在清理: {db_path}")
+        print(f"🧹 清理旧数据库: {db_path}")
         try:
             shutil.rmtree(db_path)
         except Exception as e:
-            print(f"⚠️ 清理失败 (可能是文件被占用): {e}")
+            print(f"⚠️ 清理失败: {e}")
 
-    # 3. 初始化 RAG 引擎
-    print(f"🔄 正在初始化 RAG 引擎，目标路径: {db_path}")
-    # RAGManager 会自动创建新的数据库目录
+    # 初始化 RAG
+    print(f"🔄 初始化数据库: {db_path}")
     rag = RAGManager(db_path=db_path)
     
-    # 4. 加载数据 (核心步骤)
-    print(f"📖 开始读取并向量化: {json_path} ...")
+    # 开始构建
+    print(f"📖 读取并写入数据: {json_path} ...")
     try:
-        # 调用 rag_manager.py 里的加载逻辑
-        # 它内部使用的是 json.load()，完美兼容你的缓存方案
         rag.load_knowledge_base(json_path)
-        print("✅ Vector RAG 数据库构建成功！所有案例已存入 ChromaDB。")
-    except Exception as e:
-        print(f"❌ 构建过程中发生错误: {e}")
-        return
+        
+        # 验证一下数据量
+        count = rag.collection.count()
+        print(f"\n✅ 构建成功! 数据库现包含 {count} 条案例。")
+        
+        # 简单的检索测试
+        print("🔎 自检测试 (Search Test):")
+        test_res = rag.search_similar_cases({"prefix": "1.2.3.0/24", "as_path": "174 12389"}, k=1)
+        print(test_res[:200] + "...") # 只打印前200字符
 
-    # 5. 简单验证 (确保能查出来)
-    print("\n🔎 [自检] 尝试检索一条 Twitter 劫持相关的案例...")
-    test_query = {
-        "prefix": "104.244.42.0/24", 
-        "as_path": "174 12389", 
-        "detected_origin": "12389"
-    }
-    # 搜索最相似的 1 条
-    res = rag.search_similar_cases(test_query, k=1)
-    print(f"检索结果预览:\n{'-'*40}\n{res}\n{'-'*40}")
+    except Exception as e:
+        print(f"\n❌ 构建崩溃: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     build_db()
