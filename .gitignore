@@ -12,8 +12,7 @@ rag_db
 
 
 #data
-*.json
-*.jsonl
+data
 *.gz
 
 # C extensions
@@ -49,7 +48,7 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# Unit test / coverage s
 htmlcov/
 .tox/
 .nox/
