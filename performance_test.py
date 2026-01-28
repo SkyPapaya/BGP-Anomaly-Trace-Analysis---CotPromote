@@ -1,158 +1,130 @@
 import asyncio
 import time
 import json
+import os
 import traceback
 from bgp_agent import BGPAgent
 from tabulate import tabulate
 
-# ==========================================
-# 🕵️‍♂️ 5大经典 BGP 溯源案例 (Forensics Cases)
-# ==========================================
-CLASSIC_FORENSICS_CASES = [
-    # Case 1: YouTube 劫持案 (2008)
-    # 事实: 巴基斯坦电信 (AS17557) 为了封锁 YouTube，错误地将路由宣告到了全球。
-    # 关键点: Origin 变成了 17557，而合法 Owner 是 36561。
-    {
-        "name": "YouTube / Pakistan Telecom",
-        "context": {
-            "prefix": "208.65.153.0/24",
-            "as_path": "3491 17557",  # PCCW -> Pakistan Telecom
-            "detected_origin": "17557",
-            "expected_origin": "36561"
-        },
-        "expected_attacker": "17557", # 必须精准锁定这个 AS
-        "type": "HIJACK"
-    },
+# 配置文件路径
+TEST_CASES_FILE = "data/test_cases.json"
 
-    # Case 2: Twitter 劫持案 (2022)
-    # 事实: 俄罗斯 Rostelecom (AS12389) 劫持了 Twitter 的流量。
-    # 关键点: Origin 突变为 12389。
-    {
-        "name": "Twitter / Rostelecom",
-        "context": {
-            "prefix": "104.244.42.0/24",
-            "as_path": "174 12389", 
-            "detected_origin": "12389",
-            "expected_origin": "13414"
-        },
-        "expected_attacker": "12389",
-        "type": "HIJACK"
-    },
-
-    # Case 3: Amazon DNS (MyEtherWallet) 劫持案 (2018)
-    # 事实: eNet (AS10297) 劫持了 Amazon Route53 的网段，目的是盗取加密货币。
-    # 关键点: Origin 变为 10297。
-    {
-        "name": "Amazon / eNet (Crypto Hack)",
-        "context": {
-            "prefix": "205.251.192.0/24",
-            "as_path": "6939 10297", 
-            "detected_origin": "10297",
-            "expected_origin": "16509"
-        },
-        "expected_attacker": "10297",
-        "type": "HIJACK"
-    },
-
-    # Case 4: Google / Indosat 劫持案 (2014)
-    # 事实: 印尼 ISP (Indosat, AS4761) 错误宣告了 Google 的前缀。
-    # 关键点: Origin 变为 4761。
-    {
-        "name": "Google / Indosat Hijack",
-        "context": {
-            "prefix": "209.85.128.0/24",
-            "as_path": "3356 4761",
-            "detected_origin": "4761",
-            "expected_origin": "15169"
-        },
-        "expected_attacker": "4761",
-        "type": "HIJACK"
-    },
-
-    # Case 5: 路由泄露 (复杂题) - Cloudflare / Verizon (2019)
-    # 事实: DQE (AS33154) 把路由泄露给了 Verizon (AS701)。
-    # 关键点: Origin (13335) 是正确的！但是路径里出现了不该出现的中间人 DQE (33154)。
-    # 这里的 "Attacker/Culprit" 是泄露者 33154。
-    {
-        "name": "Cloudflare / Verizon Leak",
-        "context": {
-            "prefix": "1.1.1.1/32",
-            "as_path": "701 33154 13335", # Verizon -> DQE -> Cloudflare
-            "detected_origin": "13335",
-            "expected_origin": "13335" # Origin 是对的
-        },
-        "expected_attacker": "33154", # 期望找出中间泄露者 (难度高，看Agent造化)
-        "type": "LEAK"
-    }
-]
+def load_test_cases():
+    """从 JSON 文件加载测试案例"""
+    if not os.path.exists(TEST_CASES_FILE):
+        print(f"❌ 错误: 找不到测试文件 {TEST_CASES_FILE}")
+        return []
+    
+    try:
+        with open(TEST_CASES_FILE, 'r', encoding='utf-8') as f:
+            cases = json.load(f)
+            print(f"📂 成功加载 {len(cases)} 个测试案例。")
+            return cases
+    except Exception as e:
+        print(f"❌ 读取 JSON 失败: {e}")
+        return []
 
 async def run_benchmark():
-    print("🚀 正在初始化 BGP 溯源 Agent (Forensics Mode)...")
+    # 1. 加载案例
+    cases = load_test_cases()
+    if not cases:
+        return
+
+    # 2. 初始化 Agent
+    print("🚀 正在初始化 BGP 溯源 Agent...")
     try:
         agent = BGPAgent()
     except Exception as e:
-        print(f"❌ 初始化失败: {e}")
+        print(f"❌ Agent 初始化失败: {e}")
         return
 
     results_table = []
-    print(f"\n⚡ 开始 5 轮核心溯源测试 (寻找 Attacker AS)...\n")
+    print(f"\n⚡ 开始 {len(cases)} 轮全场景测试 (溯源能力评估)...\n")
 
-    for i, case in enumerate(CLASSIC_FORENSICS_CASES):
-        print(f"[{i+1}/5] 分析案件: {case['name']} ... ", end="", flush=True)
+    # 3. 循环测试
+    correct_count = 0
+    
+    for i, case in enumerate(cases):
+        print(f"[{i+1}/{len(cases)}] {case['name']} ({case['type']}) ... ", end="", flush=True)
         
         start_time = time.time()
         
+        # 默认值
+        ai_attacker = "N/A"
+        status = "UNKNOWN"
+        verdict_icon = "❓"
+        
         try:
-            # 执行诊断
+            # === 核心调用 ===
             trace = await agent.diagnose(case['context'], verbose=False)
             
-            # 提取 AI 的判断
+            # 提取结果
             final = trace.get("final_result", {}) or {}
-            
-            # 获取 AI 锁定的攻击者 AS
-            # AI 可能返回 "AS12389" 或 "12389"，我们统一清洗一下
-            ai_attacker_raw = str(final.get("attacker_as", "Unknown"))
-            ai_attacker = ''.join(filter(str.isdigit, ai_attacker_raw)) # 只保留数字
-            
             status = final.get("status", "UNKNOWN")
             
-            # 判断是否命中 (只要数字对上就算对)
+            # 清洗 AI 返回的 Attacker AS (只保留数字)
+            raw_attacker = str(final.get("attacker_as", "None"))
+            if raw_attacker.lower() == "none" or raw_attacker.lower() == "unknown":
+                ai_attacker = "None"
+            else:
+                ai_attacker = ''.join(filter(str.isdigit, raw_attacker))
+                if not ai_attacker: ai_attacker = "None"
+
+            # === 判分逻辑 ===
             expected = case['expected_attacker']
-            is_correct = (ai_attacker == expected)
             
-            verdict_icon = "✅ HIT" if is_correct else f"❌ MISS (Got {ai_attacker})"
-            
+            # 特殊情况：如果是 BENIGN (正常)，Expected 是 None
+            if case['type'] == 'BENIGN':
+                if ai_attacker == "None" or status == "BENIGN":
+                    is_correct = True
+                else:
+                    is_correct = False
+            else:
+                # 攻击案例：必须找对 AS 号
+                is_correct = (ai_attacker == expected)
+
+            if is_correct:
+                correct_count += 1
+                verdict_icon = "✅ HIT"
+            else:
+                verdict_icon = "❌ MISS"
+
         except Exception as e:
-            print(f"\n❌ [CRASH] Case: {case['name']}")
-            traceback.print_exc()
-            ai_attacker = "ERROR"
-            verdict_icon = "⚠️ ERROR"
-            status = "CRASH"
+            print(f"\n❌ [CRASH] {str(e)}")
+            # traceback.print_exc()
+            status = "ERROR"
+            verdict_icon = "⚠️ CRASH"
 
         duration = time.time() - start_time
         print(f"完成 ({duration:.2f}s)")
 
-        # 记录数据
+        # 添加到结果表
         results_table.append([
-            case['name'],
+            case['name'][:30], # 截断名字以免太长
             case['type'],
             f"AS{case['expected_attacker']}",
-            f"AS{ai_attacker}" if ai_attacker.isdigit() else ai_attacker,
+            f"AS{ai_attacker}",
             status,
             verdict_icon,
             f"{duration:.1f}s"
         ])
 
-    # 输出漂亮的表格
-    print("\n" + "="*100)
-    print("📢 BGP 溯源能力评估报告 (Attribution Test)")
-    print("="*100)
-    headers = ["Case Name", "Type", "Real Attacker", "AI Identified", "AI Status", "Verdict", "Time"]
+    # 4. 输出最终报告
+    print("\n" + "="*110)
+    print("📢 BGP Agent 综合实战评估报告")
+    print("="*110)
+    headers = ["Case Name", "Type", "Real Attacker", "AI Verdict", "Status", "Result", "Time"]
     print(tabulate(results_table, headers=headers, tablefmt="grid"))
     
-    # 计算准确率
-    hits = sum(1 for r in results_table if "HIT" in r[5])
-    print(f"\n🎯 准确率: {hits}/{len(CLASSIC_FORENSICS_CASES)} ({hits/len(CLASSIC_FORENSICS_CASES)*100:.0f}%)")
+    accuracy = (correct_count / len(cases)) * 100
+    print(f"\n🎯 最终得分: {correct_count}/{len(cases)} ({accuracy:.1f}%)")
+    
+    if accuracy > 80:
+        print("🏆 评级: 优秀 (Expert)")
+    elif accuracy > 60:
+        print("🥈 评级: 合格 (Junior)")
+    else:
+        print("🔧 评级: 需要优化 (Needs Improvement)")
 
 if __name__ == "__main__":
     asyncio.run(run_benchmark())
