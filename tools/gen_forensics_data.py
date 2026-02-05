@@ -7,22 +7,14 @@ from openai import AsyncOpenAI
 from tqdm.asyncio import tqdm
 import aiofiles
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from tools.config_loader import get_entities
+
 # --- 配置 ---
 API_KEY = "sk-9944c48494394db6b8bc31b40f8a710f" 
 BASE_URL = "https://api.deepseek.com"
 OUTPUT_FILE = "data/forensics_cases.jsonl"
 CONCURRENCY = 10
-
-# --- 真实实体 (用于增强真实感) ---
-REAL_ENTITIES = [
-    {"asn": "15169", "name": "Google", "prefixes": ["64.233.161.0/24"]},
-    {"asn": "13414", "name": "Twitter", "prefixes": ["104.244.42.0/24"]},
-    {"asn": "3356", "name": "Level3", "is_transit": True},
-    {"asn": "174", "name": "Cogent", "is_transit": True},
-    {"asn": "12389", "name": "Rostelecom", "is_attacker_candidate": True},
-    {"asn": "4134", "name": "ChinaTelecom", "is_transit": True},
-    {"asn": "99999", "name": "MaliciousVPN", "is_attacker_candidate": True}
-]
 
 SYSTEM_PROMPT = """
 你是一个 BGP 安全取证专家的数据生成器。
@@ -60,10 +52,16 @@ class ForensicsGenerator:
         self.sem = asyncio.Semaphore(CONCURRENCY)
 
     async def generate_case(self):
-        # 随机挑选受害者和凶手
-        victim = random.choice([x for x in REAL_ENTITIES if not x.get('is_attacker_candidate')])
-        attacker = random.choice([x for x in REAL_ENTITIES if x['asn'] != victim['asn']])
-        prefix = victim.get('prefixes', ["1.2.3.0/24"])[0]
+        entities = get_entities()
+        legacy = entities.get("LEGACY", [])
+        victims = [x for x in legacy if not x.get("is_attacker_candidate")]
+        if not victims:
+            victims = entities.get("VICTIMS", [])
+        all_entities = legacy if legacy else (entities["VICTIMS"] + entities["ATTACKERS"])
+        victim = random.choice(victims) if victims else {"asn": "15169", "name": "Google", "prefixes": ["64.233.161.0/24"]}
+        candidates = [x for x in all_entities if x.get("asn") != victim.get("asn")]
+        attacker = random.choice(candidates) if candidates else random.choice(all_entities) if all_entities else {"asn": "12389", "name": "Rostelecom"}
+        prefix = victim.get("prefixes", [victim.get("prefix", "1.2.3.0/24")])[0]
         
         # 构造 path (让 attacker 出现在末尾，模拟 Origin Hijack)
         # 例如: Transit -> Attacker

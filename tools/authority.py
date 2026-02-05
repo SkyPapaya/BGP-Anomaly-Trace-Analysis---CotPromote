@@ -1,11 +1,8 @@
 from .data_provider import BGPDataProvider
+from .config_loader import get_known_prefix_origin
 
 class AuthorityValidator:
-    # 历史真值表 (作为双重保险)
-    KNOWN_FACTS = {
-        "104.244.42.0/24": "13414",
-        "104.244.0.0/21": "13414"
-    }
+    """RPKI 授权校验，优先联网查询 RIPEstat API，失败时使用知识库兜底"""
 
     def run(self, context):
         prefix = context.get('prefix')
@@ -26,9 +23,11 @@ class AuthorityValidator:
             reason = "ASN不匹配" if "asn" in status else "掩码长度不匹配"
             return f"INVALID: [API] RPKI 验证失败 ({status})！AS{origin_as} 非法宣告 ({reason})。"
 
-        # 2. 如果 API 真的返回 unknown (或者网络失败)，才启用历史兜底
-        expected = self.KNOWN_FACTS.get(prefix)
-        if not expected and prefix.startswith("104.244."): expected = "13414"
+        # 2. 如果 API 返回 unknown 或网络失败，使用知识库兜底
+        known = get_known_prefix_origin()
+        expected = known.get(prefix)
+        if not expected and prefix and prefix.startswith("104.244."):
+            expected = "13414"
 
         if expected:
             if origin_as != expected:

@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "victims": [
+      {"asn": "15169", "name": "Google", "prefix": "8.8.8.0/24"},
+      {"asn": "13414", "name": "Twitter", "prefix": "104.244.42.0/24"},
+      {"asn": "16509", "name": "Amazon", "prefix": "54.239.0.0/16"},
+      {"asn": "3320", "name": "Deutsche Telekom", "prefix": "194.25.0.0/16"},
+      {"asn": "2914", "name": "NTT", "prefix": "129.250.0.0/16"}
+    ],
+    "attackers": [
+      {"asn": "12389", "name": "Rostelecom", "desc": "Russian ISP"},
+      {"asn": "4761", "name": "Indosat", "desc": "Indonesia ISP"},
+      {"asn": "17557", "name": "Pakistan Telecom", "desc": "State Telecom"},
+      {"asn": "4134", "name": "China Telecom", "desc": "Global Tier-1"},
+      {"asn": "9999", "name": "MaliciousVPN", "desc": "Unknown Hosting"},
+      {"asn": "33154", "name": "DQE Communications", "desc": "Regional ISP"}
+    ],
+    "transit": [
+      {"asn": "3356", "name": "Level3"},
+      {"asn": "174", "name": "Cogent"},
+      {"asn": "701", "name": "Verizon"}
+    ],
+    "legacy_entities": [
+      {"asn": "15169", "name": "Google", "prefixes": ["64.233.161.0/24"]},
+      {"asn": "13414", "name": "Twitter", "prefixes": ["104.244.42.0/24"]},
+      {"asn": "3356", "name": "Level3", "is_transit": true},
+      {"asn": "174", "name": "Cogent", "is_transit": true},
+      {"asn": "12389", "name": "Rostelecom", "is_attacker_candidate": true},
+      {"asn": "4134", "name": "ChinaTelecom", "is_transit": true},
+      {"asn": "99999", "name": "MaliciousVPN", "is_attacker_candidate": true}
+    ]
+  },
+  "known_prefix_origin": {
+    "104.244.42.0/24": "13414",
+    "104.244.0.0/21": "13414"
+  },
+  "tier1_asns": [
+    "174", "209", "286", "701", "1239", "1299", "2914", "3257", "3320",
+    "3356", "3491", "5511", "6453", "6461", "6762", "6830", "7018", "12956", "6939"
+  ],
+  "risk_asns": {
+    "12389": {"name": "Rostelecom", "reason": "known for past incidents"}
+  },
+  "europe_region_codes": ["DE", "FR", "NL", "GB", "ES", "IT", "EU", "BE", "CH", "RU", "UA"]
+}
