@@ -209,6 +209,7 @@ class BGPAgent:
             step_record = {
                 "round": round_idx,
                 "thought": resp_json.get("thought_process"),
+                "ai_full_response": resp_json,
                 "tool_used": tool_req,
                 "tool_output": None
             }
@@ -250,7 +251,14 @@ class BGPAgent:
             final_resp = await self._call_llm(messages)
             if final_resp and final_resp.get("final_decision"):
                 trace["final_result"] = final_resp.get("final_decision")
-        
+                trace["chain_of_thought"].append({
+                    "round": "force",
+                    "thought": final_resp.get("thought_process"),
+                    "ai_full_response": final_resp,
+                    "tool_used": None,
+                    "tool_output": None,
+                })
+
         self._save_report(trace)
         return trace
 
@@ -342,6 +350,7 @@ class BGPAgent:
             step_record = {
                 "round": round_idx,
                 "thought": resp_json.get("thought_process"),
+                "ai_full_response": resp_json,
                 "tool_used": tool_req,
                 "tool_output": None
             }
@@ -379,6 +388,13 @@ class BGPAgent:
             final_resp = await self._call_llm(messages)
             if final_resp and final_resp.get("final_decision"):
                 trace["final_result"] = final_resp.get("final_decision")
+                trace["chain_of_thought"].append({
+                    "round": "force",
+                    "thought": final_resp.get("thought_process"),
+                    "ai_full_response": final_resp,
+                    "tool_used": None,
+                    "tool_output": None,
+                })
 
         self._save_report(trace, is_batch=True)
         return trace

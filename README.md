@@ -17,8 +17,10 @@
 
 ### 2. 核心流程
 
-1. **单条溯源**：输入单条告警（prefix、as_path、detected_origin、expected_origin），Agent 调用工具多轮推理，输出 `attacker_as` 与 `status`。
-2. **批量溯源**：输入时间窗口内多条告警，汇总分析后输出 `most_likely_attacker` 与 `confidence`（考虑告警不一定 100% 准确）。
+1. **RAG 知识注入**：分析开始前，从向量库检索相似历史案例（`rag_db`），注入到 System Prompt，为 AI 提供先验知识支撑。
+2. **三轮思考与工具调用**：每轮思考允许 AI 调用工具（`path_forensics`、`graph_analysis`、`authority_check` 等），最多 3 轮；每轮可请求工具，根据工具结果继续推理，直至输出 `final_decision`。
+3. **单条溯源**：输入单条告警，输出 `attacker_as` 与 `status`。
+4. **批量溯源**：输入时间窗口内多条告警，汇总分析后输出 `most_likely_attacker` 与 `confidence`。
 
 ### 3. 知识库与联网
 
@@ -62,8 +64,10 @@
 ## 三、环境与依赖
 
 ```bash
-pip install openai chromadb sentence-transformers neo4j requests aiofiles tqdm tabulate
+pip install openai chromadb sentence-transformers neo4j requests aiofiles tqdm tabulate mrtparse
 ```
+
+> **tqdm**: 用于 Step1 与性能测试的进度条展示
 
 - **LLM**：DeepSeek API（在 `bgp_agent.py`、`gen_forensics_data.py`、`auto_generator.py` 中配置 API_KEY）
 - **RAG**：ChromaDB + SentenceTransformer
@@ -139,20 +143,38 @@ trace = asyncio.run(agent.diagnose_batch(batch, verbose=True))
 # trace["final_result"] = {"most_likely_attacker": "174", "confidence": "High", "summary": "..."}
 ```
 
-### 5. 性能评估
+### 5. 性能评估（两步式验证）
 
-准备 `data/test_cases.json`，格式示例：
-```json
-[
-  {"name": "Google Hijack", "type": "MALICIOUS", "context": {...}, "expected_attacker": "174"},
-  {"name": "Benign", "type": "BENIGN", "context": {...}, "expected_attacker": null}
-]
-```
+**Step1：收集真实事件并过滤可疑 updates**
 
-运行：
+1. 在 **`data/test_events.json`** 中手动配置待测案例（格式见 `data/README_test_events.md`）
+2. 下载目标前缀在时间窗口内的原始 BGP updates（默认 RIPE RIS MRT，支持历史数据；可选 RIPEstat BGPlay）
+3. 按论文四步法筛选可疑 updates：前缀过滤、Origin 校验（MOAS）、Valley-Free 违规
+4. 按事件存储到 `data/events/<event_id>/`
+
 ```bash
-python performance_test.py
+# 默认使用 RIPE RIS MRT（支持历史数据，如 2005/2008/2014 等）
+python scripts/step1_collect_events.py --input data/test_events.json --source ris_mrt
+
+# 或 RIPEstat BGPlay（仅 2024-01+）
+python scripts/step1_collect_events.py --input data/test_events.json --source ripestat
+
+# auto: 优先 RIS，失败则 BGPlay
+python scripts/step1_collect_events.py --input data/test_events.json --source auto
 ```
+
+**Step2：用系统分析并验证命中率**
+
+```bash
+python performance_test.py --events
+```
+
+对比系统判定的攻击者 AS 与 BGP Watch 给出的可疑 AS，计算准确率。
+
+**其他数据源：**
+
+- 本地 `test_cases.json`：`python performance_test.py`
+- BGP Watch 在线（无原始 updates）：`python performance_test.py --bgpwatch`
 
 ### 6. 拓扑分析（可选）
 
@@ -181,4 +203,7 @@ python performance_test.py
 - 单条：`forensics_{prefix}_{timestamp}.json`
 - 批量：`forensics_batch_{prefix}_{N}updates_{timestamp}.json`
 
-报告包含 `chain_of_thought`（思维链步骤）、`final_result`（结案结论）等字段。
+报告字段说明：
+- `rag_context`：RAG 检索到的历史案例
+- `chain_of_thought`：每轮完整记录，含 `round`、`thought`、`ai_full_response`（AI 当轮完整 JSON 回复）、`tool_used`、`tool_output`
+- `final_result`：结案结论
