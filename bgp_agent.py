@@ -283,12 +283,11 @@ class BGPAgent:
         if verbose:
             print(f"\n🕵️‍♂️ [Agent] 批量溯源: 共 {len(updates)} 条告警 updates ...")
 
-        # --- Phase 1: RAG 知识检索（用第一条或汇总信息）---
-        rag_ctx = updates[0] if updates else {}
+        # --- Phase 1: RAG 知识检索（汇总所有 updates 分别查询，合并去重取 top-k）---
         try:
-            rag_knowledge = self.rag.search_similar_cases(rag_ctx, k=2)
+            rag_knowledge = self.rag.search_similar_cases_batch(updates, k=2)
             if verbose and "未找到" not in str(rag_knowledge):
-                print(f"📚 [RAG] 已加载历史溯源档案...")
+                print(f"📚 [RAG] 已加载历史溯源档案（汇总 {len(updates)} 条 updates 检索）...")
         except Exception:
             rag_knowledge = "(RAG Database Unavailable)"
 

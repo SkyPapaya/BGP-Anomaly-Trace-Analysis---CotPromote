@@ -119,7 +119,8 @@ def filter_suspicious_updates(
             })
             return
 
-        # 4. Valley-Free：路径中间违反商业关系
+
+        #Tier1 集合来自 config/knowledge_base.json 的 ，已知的骨干网络as号# 4. Valley-Free：路径中间违反商业关系
         if use_valley_free and tier1 and len(_parse_path(path)) >= 3:
             for i in range(1, len(_parse_path(path)) - 1):
                 prev = _parse_path(path)[i - 1]

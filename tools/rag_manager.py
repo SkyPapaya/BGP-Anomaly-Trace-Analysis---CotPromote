@@ -64,7 +64,6 @@ class RAGManager:
             # 优先使用场景描述作为向量化的主体
             doc_text = case.get('scenario_desc', str(case))
 
-            # --- 元数据处理 (Metadata) [核心修复点] ---
             
             # 1. 兼容 analysis 字段名 (旧数据用 analysis, 新数据用 analysis_logic)
             analysis_text = case.get('analysis') or case.get('analysis_logic') or "N/A"
@@ -88,7 +87,7 @@ class RAGManager:
             documents.append(doc_text)
             metadatas.append(meta)
 
-        # 3. 批量写入 ChromaDB
+        # 3. 批量写入 ChromaDB//生成向量
         if ids:
             try:
                 embeddings = self.model.encode(documents).tolist()
@@ -102,48 +101,78 @@ class RAGManager:
             except Exception as e:
                 logger.error(f"写入数据库失败: {e}")
 
-    def search_similar_cases(self, query_context, k=2):
-        """
-        RAG 检索接口
-        """
-        # 将结构化的 Context 转换为自然语言查询
-        if isinstance(query_context, dict):
-            query_text = f"BGP anomaly prefix {query_context.get('prefix', '')} path {query_context.get('as_path', '')} origin {query_context.get('detected_origin', '')}"
-        else:
-            query_text = str(query_context)
+    def _context_to_query(self, ctx):
+        """将单条 context 转为查询文本"""
+        if isinstance(ctx, dict):
+            return f"BGP anomaly prefix {ctx.get('prefix', '')} path {ctx.get('as_path', '')} origin {ctx.get('detected_origin', '')}"
+        return str(ctx)
 
-        results = self.collection.query(
-            query_texts=[query_text],
-            n_results=k
-        )
-
-        knowledge_snippets = []
-        if not results['documents'][0]:
-            return "（未找到相似历史案例）"
-
-        for i, doc in enumerate(results['documents'][0]):
-            meta = results['metadatas'][0][i]
-            dist = results['distances'][0][i]
-            
-            # 解析 Conclusion (如果是 JSON 串则还原)
-            conclusion_display = meta['conclusion']
+    def _format_results(self, items):
+        """将 (doc, meta, dist) 列表格式化为输出字符串"""
+        snippets = []
+        for i, (doc, meta, dist) in enumerate(items, 1):
+            conclusion_display = meta.get('conclusion', 'N/A')
             try:
-                # 尝试解析回来只是为了排版，如果不需要可以直接用字符串
                 conc_obj = json.loads(conclusion_display)
                 conclusion_display = json.dumps(conc_obj, ensure_ascii=False, indent=2)
-            except:
+            except Exception:
                 pass
-
             snippet = f"""
---- [参考案例 #{i+1} | 相关性: {1-dist:.2f}] ---
-【类型】: {meta['type']}
+--- [参考案例 #{i} | 相关性: {1-dist:.2f}] ---
+【类型】: {meta.get('type', 'Unknown')}
 【场景】: {doc}
-【分析逻辑】: {meta['analysis']}
+【分析逻辑】: {meta.get('analysis', 'N/A')}
 【结论】: {conclusion_display}
 """
-            knowledge_snippets.append(snippet)
-        
-        return "\n".join(knowledge_snippets)
+            snippets.append(snippet)
+        return "\n".join(snippets)
+
+    def search_similar_cases(self, query_context, k=2):
+        """
+        RAG 检索接口（单条）
+        """
+        query_text = self._context_to_query(query_context)
+        results = self.collection.query(query_texts=[query_text], n_results=k)
+        if not results['documents'][0]:
+            return "（未找到相似历史案例）"
+        items = list(zip(
+            results['documents'][0],
+            results['metadatas'][0],
+            results['distances'][0],
+        ))
+        return self._format_results(items)
+
+    def search_similar_cases_batch(self, updates_list, k=2):
+        """
+        批量 RAG 检索：汇总所有 updates 的信息分别查询，合并去重后取 top-k。
+        多条 updates 可能含噪声，汇总检索可提升召回相关案例的覆盖面，降低单条噪声影响。
+        """
+        if not updates_list:
+            return "（未找到相似历史案例）"
+        if len(updates_list) == 1:
+            return self.search_similar_cases(updates_list[0], k=k)
+
+        # 对每条 update 分别查询，每条约取 2k 以增加候选
+        seen = {}
+        per_k = min(3, max(1, (k * 2 + len(updates_list) - 1) // len(updates_list)))
+        for u in updates_list:
+            query_text = self._context_to_query(u)
+            try:
+                res = self.collection.query(query_texts=[query_text], n_results=per_k)
+                if not res['documents'][0]:
+                    continue
+                for j, doc_id in enumerate(res['ids'][0]):
+                    dist = res['distances'][0][j]
+                    if doc_id not in seen or seen[doc_id][2] > dist:
+                        seen[doc_id] = (res['documents'][0][j], res['metadatas'][0][j], dist)
+            except Exception as e:
+                logger.debug(f"RAG batch query 单条失败: {e}")
+                continue
+
+        if not seen:
+            return "（未找到相似历史案例）"
+        items = sorted(seen.values(), key=lambda x: x[2])[:k]
+        return self._format_results(items)
 
 if __name__ == "__main__":
     # 简单自测
