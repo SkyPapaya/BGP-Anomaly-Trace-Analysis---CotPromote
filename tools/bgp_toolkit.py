@@ -1,6 +1,7 @@
 import os
 import json
 import sys
+from tools.env_loader import get_env
 
 # 尝试导入 Graph RAG 模块 (用于连接 Neo4j)
 # 确保 tools 目录在 python 路径下
@@ -31,7 +32,7 @@ class BGPToolKit:
         if GRAPH_RAG_AVAILABLE:
             try:
                 # 优先从环境变量读取 Neo4j 密码
-                self.graph_engine = BGPGraphRAG(password=os.getenv("NEO4J_PASSWORD", "neo4j"))
+                self.graph_engine = BGPGraphRAG(password=get_env("NEO4J_PASSWORD", "neo4j"))
             except Exception as e:
                 print(f"❌ [Error] Neo4j 连接失败: {e}")
                 self.graph_engine = None

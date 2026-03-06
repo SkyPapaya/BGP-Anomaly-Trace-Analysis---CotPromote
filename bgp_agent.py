@@ -7,11 +7,12 @@ import traceback
 from datetime import datetime
 from openai import AsyncOpenAI
 from tools.bgp_toolkit import BGPToolKit
+from tools.env_loader import get_first_env
 from tools.rag_manager import RAGManager
 from tools.project_paths import RAG_DB_DIR, REPORT_FORENSICS_DIR
 
 # --- 配置 ---
-API_KEY = os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY", "")
+API_KEY = get_first_env("DEEPSEEK_API_KEY", "OPENAI_API_KEY", default="")
 BASE_URL = "https://api.deepseek.com"
 
 class BGPAgent:
@@ -20,7 +21,7 @@ class BGPAgent:
         初始化 BGP 溯源 Agent
         """
         if not API_KEY:
-            raise ValueError("缺少 API Key，请设置环境变量 DEEPSEEK_API_KEY 或 OPENAI_API_KEY。")
+            raise ValueError("缺少 API Key，请在项目根目录 .env 配置 DEEPSEEK_API_KEY（或 OPENAI_API_KEY）。")
         self.client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
         
         # 1. 初始化工具箱

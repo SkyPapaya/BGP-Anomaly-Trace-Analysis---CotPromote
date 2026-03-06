@@ -1,7 +1,7 @@
 # tools/graph_rag.py
 from neo4j import GraphDatabase
 import logging
-import os
+from tools.env_loader import get_env
 
 # 配置日志
 logging.basicConfig(level=logging.WARNING)
@@ -13,7 +13,7 @@ class BGPGraphRAG:
         初始化 Neo4j 连接并注入初始数据
         """
         self.driver = None
-        neo4j_password = password if password is not None else os.getenv("NEO4J_PASSWORD", "neo4j")
+        neo4j_password = password if password is not None else get_env("NEO4J_PASSWORD", "neo4j")
         try:
             self.driver = GraphDatabase.driver(uri, auth=(user, neo4j_password))
             # 验证连接
