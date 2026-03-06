@@ -366,6 +366,7 @@ class BGPAgent:
             "chain_of_thought": [],
             "final_result": None
         }
+        final_candidate = None
 
         # --- Phase 3: 推理循环 (Max 3 Rounds) ---
         for round_idx in range(1, 4):
@@ -412,12 +413,26 @@ class BGPAgent:
             
             # 如果没有工具，检查是否结案
             if final_decision:
-                trace["final_result"] = final_decision
+                final_candidate = final_decision
                 trace["chain_of_thought"].append(step_record)
-                if verbose: 
-                    attacker = final_decision.get('attacker_as', 'Unknown')
+                if round_idx < 3:
+                    # 固定三轮复核：即使已初步结案，也继续让模型做后续复核并保留思考链
+                    messages.append({"role": "assistant", "content": json.dumps(resp_json)})
+                    messages.append({
+                        "role": "user",
+                        "content": (
+                            f"你已给出阶段性结论（第{round_idx}轮）。"
+                            "请继续下一轮复核：可补充工具验证或指出证据冲突，"
+                            "并继续按JSON格式输出。"
+                        ),
+                    })
+                    continue
+
+                trace["final_result"] = final_candidate
+                if verbose:
+                    attacker = final_candidate.get('attacker_as', 'Unknown')
                     print(f"✅ 结案! 锁定攻击者: {attacker}")
-                
+
                 self._save_report(trace)
                 return trace
 
@@ -425,6 +440,11 @@ class BGPAgent:
             trace["chain_of_thought"].append(step_record)
             messages.append({"role": "assistant", "content": json.dumps(resp_json)})
             messages.append({"role": "user", "content": "请继续分析。"})
+
+        if trace["final_result"] is None and final_candidate is not None:
+            trace["final_result"] = final_candidate
+            self._save_report(trace)
+            return trace
 
         # --- Phase 4: 强制结算 ---
         if trace["final_result"] is None:
@@ -535,6 +555,7 @@ class BGPAgent:
             "chain_of_thought": [],
             "final_result": None
         }
+        final_candidate = None
 
         tool_evidence = {
             "called_tools": set(),
@@ -599,11 +620,24 @@ class BGPAgent:
                     continue
 
                 final_fixed = gate.get("decision", final_decision)
-                trace["final_result"] = final_fixed
+                final_candidate = final_fixed
                 trace["chain_of_thought"].append(step_record)
+                if round_idx < 3:
+                    messages.append({"role": "assistant", "content": json.dumps(resp_json)})
+                    messages.append({
+                        "role": "user",
+                        "content": (
+                            f"你已给出阶段性结论（第{round_idx}轮）。"
+                            "请继续下一轮复核：检查是否与工具证据冲突，"
+                            "必要时调整结论，继续按JSON格式输出。"
+                        ),
+                    })
+                    continue
+
+                trace["final_result"] = final_candidate
                 if verbose:
-                    attacker = final_fixed.get("most_likely_attacker", final_fixed.get("attacker_as", "Unknown"))
-                    conf = final_fixed.get("confidence", "")
+                    attacker = final_candidate.get("most_likely_attacker", final_candidate.get("attacker_as", "Unknown"))
+                    conf = final_candidate.get("confidence", "")
                     print(f"✅ 结案! 最可能攻击者: {attacker} (置信度: {conf})")
                 self._save_report(trace, is_batch=True)
                 return trace
@@ -611,6 +645,11 @@ class BGPAgent:
             trace["chain_of_thought"].append(step_record)
             messages.append({"role": "assistant", "content": json.dumps(resp_json)})
             messages.append({"role": "user", "content": "请继续分析。"})
+
+        if trace["final_result"] is None and final_candidate is not None:
+            trace["final_result"] = final_candidate
+            self._save_report(trace, is_batch=True)
+            return trace
 
         # --- Phase 4: 强制结算 ---
         if trace["final_result"] is None:

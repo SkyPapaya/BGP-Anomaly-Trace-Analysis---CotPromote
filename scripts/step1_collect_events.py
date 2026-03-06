@@ -159,6 +159,10 @@ def main():
             "data_source": data_source_meta,
             "suspicious_count": len(suspicious),
         }
+        # 透传输入中的可选标签字段，便于后续分类型实验评测
+        for opt_key in ("event_type", "reference", "is_real", "case_name", "note"):
+            if opt_key in ev:
+                meta[opt_key] = ev.get(opt_key)
 
         with open(os.path.join(ev_dir, "meta.json"), "w", encoding="utf-8") as f:
             json.dump(meta, f, indent=2, ensure_ascii=False)
