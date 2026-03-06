@@ -1,4 +1,5 @@
 from .data_provider import BGPDataProvider
+from .config_loader import get_europe_region_codes
 
 class GeoConflictChecker:
     def run(self, context):
@@ -21,7 +22,7 @@ class GeoConflictChecker:
             return f"SKIPPED: 数据缺失 (IP:{prefix_country}, Origin:{origin_country})。"
 
         if prefix_country != origin_country:
-            eu = {"DE", "FR", "NL", "GB", "ES", "IT", "EU", "BE", "CH", "RU", "UA"}
+            eu = get_europe_region_codes()
             if prefix_country in eu and origin_country in eu:
                  return f"LOW_RISK: 地理不一致 ({prefix_country} vs {origin_country})，但在同一区域内。"
 

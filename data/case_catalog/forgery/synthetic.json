@@ -1,0 +1,370 @@
+[
+  {
+    "case_id": "FORGERY-S-01",
+    "case_name": "Synthetic Fake-Adjacency Forgery",
+    "event_type": "FORGERY",
+    "source_type": "synthetic",
+    "simulation_reason": "3 条 updates 的 origin 均合法为 15169，但 as_path 在不同上游下都稳定插入中间 AS65081（如 3356 65081 15169）；该“跨视角重复的异常邻接”更符合路径伪造而非泄露。由 3/3 路径共同出现的伪造节点归因为 AS65081。",
+    "expected_attacker": "65081",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-20T09:00:00",
+        "end": "2026-02-20T09:20:00"
+      },
+      "updates": [
+        {
+          "prefix": "8.8.8.0/24",
+          "as_path": "3356 65081 15169",
+          "detected_origin": "15169",
+          "expected_origin": "15169"
+        },
+        {
+          "prefix": "8.8.8.0/24",
+          "as_path": "174 65081 15169",
+          "detected_origin": "15169",
+          "expected_origin": "15169"
+        },
+        {
+          "prefix": "8.8.8.0/24",
+          "as_path": "2914 65081 15169",
+          "detected_origin": "15169",
+          "expected_origin": "15169"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "FORGERY-S-02",
+    "case_name": "Synthetic Forged Upstream Sequence",
+    "event_type": "FORGERY",
+    "source_type": "synthetic",
+    "simulation_reason": "3 条 updates 均呈现“上游 -> 65082 -> 3356 -> 13335”，origin 仍为 13335；异常点在于多视角一致出现额外的 65082 上游序列，表示路径链被插入伪造跳点。由稳定插入的伪造节点归因为 AS65082。",
+    "expected_attacker": "65082",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-20T10:00:00",
+        "end": "2026-02-20T10:30:00"
+      },
+      "updates": [
+        {
+          "prefix": "1.1.1.0/24",
+          "as_path": "1299 65082 3356 13335",
+          "detected_origin": "13335",
+          "expected_origin": "13335"
+        },
+        {
+          "prefix": "1.1.1.0/24",
+          "as_path": "3257 65082 3356 13335",
+          "detected_origin": "13335",
+          "expected_origin": "13335"
+        },
+        {
+          "prefix": "1.1.1.0/24",
+          "as_path": "174 65082 3356 13335",
+          "detected_origin": "13335",
+          "expected_origin": "13335"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "FORGERY-S-03",
+    "case_name": "Synthetic Path-Shortening Forgery",
+    "event_type": "FORGERY",
+    "source_type": "synthetic",
+    "simulation_reason": "3 条 updates 均为“上游 -> 65083 -> 64540”，origin 保持合法；路径在多观测点被一致性缩短/重写为经 65083 直达目标，属于路径缩短型伪造。由重复出现的改写节点归因为 AS65083。",
+    "expected_attacker": "65083",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-20T11:00:00",
+        "end": "2026-02-20T11:30:00"
+      },
+      "updates": [
+        {
+          "prefix": "203.0.122.0/24",
+          "as_path": "701 65083 64540",
+          "detected_origin": "64540",
+          "expected_origin": "64540"
+        },
+        {
+          "prefix": "203.0.122.0/24",
+          "as_path": "3356 65083 64540",
+          "detected_origin": "64540",
+          "expected_origin": "64540"
+        },
+        {
+          "prefix": "203.0.122.0/24",
+          "as_path": "6939 65083 64540",
+          "detected_origin": "64540",
+          "expected_origin": "64540"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "FORGERY-S-04",
+    "case_name": "Synthetic Hidden-Hop Forgery",
+    "event_type": "FORGERY",
+    "source_type": "synthetic",
+    "simulation_reason": "3 条 updates 在不同上游均包含“-> 65084 -> 64550”结构，origin 无异常；问题集中在中间隐藏跳点 65084 的一致注入，符合 hidden-hop 伪造特征。由 3/3 证据归因攻击者为 AS65084。",
+    "expected_attacker": "65084",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-20T12:00:00",
+        "end": "2026-02-20T12:30:00"
+      },
+      "updates": [
+        {
+          "prefix": "203.0.123.0/24",
+          "as_path": "1299 65084 64550",
+          "detected_origin": "64550",
+          "expected_origin": "64550"
+        },
+        {
+          "prefix": "203.0.123.0/24",
+          "as_path": "3257 65084 64550",
+          "detected_origin": "64550",
+          "expected_origin": "64550"
+        },
+        {
+          "prefix": "203.0.123.0/24",
+          "as_path": "174 65084 64550",
+          "detected_origin": "64550",
+          "expected_origin": "64550"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "FORGERY-S-05",
+    "case_name": "Synthetic Replay-Style Path Forgery",
+    "event_type": "FORGERY",
+    "source_type": "synthetic",
+    "simulation_reason": "3 条 updates 都出现“... 3257 65085 16509”尾部片段，origin 合法为 16509；说明攻击者复用常见历史路径片段并插入 65085 篡改尾段。由于伪造片段在多条更新中重复出现，归因 AS65085。",
+    "expected_attacker": "65085",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-20T13:00:00",
+        "end": "2026-02-20T13:30:00"
+      },
+      "updates": [
+        {
+          "prefix": "52.94.11.0/24",
+          "as_path": "701 3257 65085 16509",
+          "detected_origin": "16509",
+          "expected_origin": "16509"
+        },
+        {
+          "prefix": "52.94.11.0/24",
+          "as_path": "3356 3257 65085 16509",
+          "detected_origin": "16509",
+          "expected_origin": "16509"
+        },
+        {
+          "prefix": "52.94.11.0/24",
+          "as_path": "174 3257 65085 16509",
+          "detected_origin": "16509",
+          "expected_origin": "16509"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "FORGERY-S-06",
+    "case_name": "Synthetic Multi-Vantage Forgery Burst",
+    "event_type": "FORGERY",
+    "source_type": "synthetic",
+    "simulation_reason": "4 条 updates 在多观测点同时出现“上游 -> 65086 -> 15169”模式，origin 仍合法；短时多点一致的异常中间节点表明是批量路径伪造爆发。由 4/4 路径共现的伪造节点归因为 AS65086。",
+    "expected_attacker": "65086",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-20T14:00:00",
+        "end": "2026-02-20T14:20:00"
+      },
+      "updates": [
+        {
+          "prefix": "64.233.161.0/24",
+          "as_path": "1299 65086 15169",
+          "detected_origin": "15169",
+          "expected_origin": "15169"
+        },
+        {
+          "prefix": "64.233.161.0/24",
+          "as_path": "3257 65086 15169",
+          "detected_origin": "15169",
+          "expected_origin": "15169"
+        },
+        {
+          "prefix": "64.233.161.0/24",
+          "as_path": "2914 65086 15169",
+          "detected_origin": "15169",
+          "expected_origin": "15169"
+        },
+        {
+          "prefix": "64.233.161.0/24",
+          "as_path": "174 65086 15169",
+          "detected_origin": "15169",
+          "expected_origin": "15169"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "FORGERY-S-07",
+    "case_name": "Synthetic Forgery with Benign Noise",
+    "event_type": "FORGERY",
+    "source_type": "synthetic",
+    "simulation_reason": "4 条 updates 中有 3 条包含伪造节点 65087（如 3356/174/2914 -> 65087 -> 13414），仅 1 条为正常路径（1299 3356 13414）；在存在正常噪声时仍可由多数异常路径识别伪造。按 3/4 证据归因为 AS65087。",
+    "expected_attacker": "65087",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-20T15:00:00",
+        "end": "2026-02-20T15:35:00"
+      },
+      "updates": [
+        {
+          "prefix": "104.244.42.0/24",
+          "as_path": "3356 65087 13414",
+          "detected_origin": "13414",
+          "expected_origin": "13414"
+        },
+        {
+          "prefix": "104.244.42.0/24",
+          "as_path": "174 65087 13414",
+          "detected_origin": "13414",
+          "expected_origin": "13414"
+        },
+        {
+          "prefix": "104.244.42.0/24",
+          "as_path": "1299 3356 13414",
+          "detected_origin": "13414",
+          "expected_origin": "13414"
+        },
+        {
+          "prefix": "104.244.42.0/24",
+          "as_path": "2914 65087 13414",
+          "detected_origin": "13414",
+          "expected_origin": "13414"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "FORGERY-S-08",
+    "case_name": "Synthetic Long-Path Forgery",
+    "event_type": "FORGERY",
+    "source_type": "synthetic",
+    "simulation_reason": "3 条长路径 updates 分别为“701 3356 65088 16509”“174 1299 65088 16509”“3257 2914 65088 16509”，共同点是都在临近 origin 位置出现 65088；origin 本身合法，因此异常在路径结构被统一篡改。由共现篡改节点归因为 AS65088。",
+    "expected_attacker": "65088",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-20T16:00:00",
+        "end": "2026-02-20T16:30:00"
+      },
+      "updates": [
+        {
+          "prefix": "54.239.0.0/16",
+          "as_path": "701 3356 65088 16509",
+          "detected_origin": "16509",
+          "expected_origin": "16509"
+        },
+        {
+          "prefix": "54.239.0.0/16",
+          "as_path": "174 1299 65088 16509",
+          "detected_origin": "16509",
+          "expected_origin": "16509"
+        },
+        {
+          "prefix": "54.239.0.0/16",
+          "as_path": "3257 2914 65088 16509",
+          "detected_origin": "16509",
+          "expected_origin": "16509"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "FORGERY-S-09",
+    "case_name": "Synthetic Low-Consensus Forgery",
+    "event_type": "FORGERY",
+    "source_type": "synthetic",
+    "simulation_reason": "4 条 updates 分为两组伪造节点：65089 与 65090 各 2 条，origin 64560 合法；可以确认存在路径伪造异常，但攻击者候选没有主导一致性。该样例用于验证低共识场景应输出 UNCERTAIN/None。",
+    "expected_attacker": "None",
+    "accept_uncertain": true,
+    "context": {
+      "time_window": {
+        "start": "2026-02-20T17:00:00",
+        "end": "2026-02-20T17:30:00"
+      },
+      "updates": [
+        {
+          "prefix": "203.0.124.0/24",
+          "as_path": "3356 65089 64560",
+          "detected_origin": "64560",
+          "expected_origin": "64560"
+        },
+        {
+          "prefix": "203.0.124.0/24",
+          "as_path": "174 65090 64560",
+          "detected_origin": "64560",
+          "expected_origin": "64560"
+        },
+        {
+          "prefix": "203.0.124.0/24",
+          "as_path": "1299 65089 64560",
+          "detected_origin": "64560",
+          "expected_origin": "64560"
+        },
+        {
+          "prefix": "203.0.124.0/24",
+          "as_path": "2914 65090 64560",
+          "detected_origin": "64560",
+          "expected_origin": "64560"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "FORGERY-S-10",
+    "case_name": "Synthetic Sub-prefix Path Forgery",
+    "event_type": "FORGERY",
+    "source_type": "synthetic",
+    "simulation_reason": "3 条子前缀（8.8.8.128/25）updates 均出现“上游 -> 65091 -> 15169”，origin 与 expected_origin 一致；异常来自子前缀路径中稳定插入 65091，符合子前缀级路径伪造。由 3/3 一致路径证据归因为 AS65091。",
+    "expected_attacker": "65091",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-20T18:00:00",
+        "end": "2026-02-20T18:25:00"
+      },
+      "updates": [
+        {
+          "prefix": "8.8.8.128/25",
+          "as_path": "3356 65091 15169",
+          "detected_origin": "15169",
+          "expected_origin": "15169"
+        },
+        {
+          "prefix": "8.8.8.128/25",
+          "as_path": "174 65091 15169",
+          "detected_origin": "15169",
+          "expected_origin": "15169"
+        },
+        {
+          "prefix": "8.8.8.128/25",
+          "as_path": "1299 65091 15169",
+          "detected_origin": "15169",
+          "expected_origin": "15169"
+        }
+      ]
+    }
+  }
+]

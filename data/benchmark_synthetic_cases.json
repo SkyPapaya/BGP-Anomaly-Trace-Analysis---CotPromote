@@ -1,0 +1,89 @@
+[
+  {
+    "case_name": "Synthetic Direct Hijack (majority attacker + noise)",
+    "event_type": "HIJACK",
+    "is_real": false,
+    "expected_attacker": "65001",
+    "context": {
+      "time_window": {
+        "start": "2026-01-01T10:00:00",
+        "end": "2026-01-01T10:30:00"
+      },
+      "updates": [
+        {"prefix": "203.0.113.0/24", "as_path": "3356 65001", "detected_origin": "65001", "expected_origin": "64496"},
+        {"prefix": "203.0.113.0/24", "as_path": "174 65001", "detected_origin": "65001", "expected_origin": "64496"},
+        {"prefix": "203.0.113.0/24", "as_path": "1299 65001", "detected_origin": "65001", "expected_origin": "64496"},
+        {"prefix": "203.0.113.0/24", "as_path": "3356 65002", "detected_origin": "65002", "expected_origin": "64496"}
+      ]
+    }
+  },
+  {
+    "case_name": "Synthetic Route Leak (origin valid, leaker in middle)",
+    "event_type": "LEAK",
+    "is_real": false,
+    "expected_attacker": "33154",
+    "context": {
+      "time_window": {
+        "start": "2026-01-02T11:00:00",
+        "end": "2026-01-02T11:30:00"
+      },
+      "updates": [
+        {"prefix": "1.1.1.0/24", "as_path": "701 33154 13335", "detected_origin": "13335", "expected_origin": "13335"},
+        {"prefix": "1.1.1.0/24", "as_path": "3356 33154 13335", "detected_origin": "13335", "expected_origin": "13335"},
+        {"prefix": "1.1.1.0/24", "as_path": "174 33154 13335", "detected_origin": "13335", "expected_origin": "13335"}
+      ]
+    }
+  },
+  {
+    "case_name": "Synthetic Path Forgery (fake adjacency)",
+    "event_type": "FORGERY",
+    "is_real": false,
+    "expected_attacker": "666",
+    "context": {
+      "time_window": {
+        "start": "2026-01-03T09:00:00",
+        "end": "2026-01-03T09:30:00"
+      },
+      "updates": [
+        {"prefix": "8.8.8.0/24", "as_path": "3356 666 15169", "detected_origin": "15169", "expected_origin": "15169"},
+        {"prefix": "8.8.8.0/24", "as_path": "174 666 15169", "detected_origin": "15169", "expected_origin": "15169"},
+        {"prefix": "8.8.8.0/24", "as_path": "2914 666 15169", "detected_origin": "15169", "expected_origin": "15169"}
+      ]
+    }
+  },
+  {
+    "case_name": "Synthetic Benign (normal operation)",
+    "event_type": "BENIGN",
+    "is_real": false,
+    "expected_attacker": "None",
+    "context": {
+      "time_window": {
+        "start": "2026-01-04T13:00:00",
+        "end": "2026-01-04T13:30:00"
+      },
+      "updates": [
+        {"prefix": "9.9.9.0/24", "as_path": "3356 19281", "detected_origin": "19281", "expected_origin": "19281"},
+        {"prefix": "9.9.9.0/24", "as_path": "174 19281", "detected_origin": "19281", "expected_origin": "19281"}
+      ]
+    }
+  },
+  {
+    "case_name": "Synthetic Low Consensus (conflicting attackers)",
+    "event_type": "HIJACK",
+    "is_real": false,
+    "expected_attacker": "None",
+    "accept_uncertain": true,
+    "context": {
+      "time_window": {
+        "start": "2026-01-05T15:00:00",
+        "end": "2026-01-05T15:30:00"
+      },
+      "updates": [
+        {"prefix": "198.51.100.0/24", "as_path": "3356 65010", "detected_origin": "65010", "expected_origin": "64497"},
+        {"prefix": "198.51.100.0/24", "as_path": "174 65011", "detected_origin": "65011", "expected_origin": "64497"},
+        {"prefix": "198.51.100.0/24", "as_path": "2914 65010", "detected_origin": "65010", "expected_origin": "64497"},
+        {"prefix": "198.51.100.0/24", "as_path": "1299 65011", "detected_origin": "65011", "expected_origin": "64497"}
+      ]
+    }
+  }
+]

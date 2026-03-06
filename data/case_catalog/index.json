@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-03-06",
+  "catalog_root": "data/case_catalog",
+  "types": [
+    {
+      "event_type": "HIJACK",
+      "real": 6,
+      "synthetic": 4,
+      "total": 10,
+      "synthetic_reason": "公开可核验真值的历史劫持样本有限，补充子前缀、低一致性、噪声混入等场景。",
+      "paths": {
+        "real": "data/case_catalog/hijack/real.json",
+        "synthetic": "data/case_catalog/hijack/synthetic.json",
+        "cases_10": "data/case_catalog/hijack/cases_10.json"
+      }
+    },
+    {
+      "event_type": "LEAK",
+      "real": 5,
+      "synthetic": 5,
+      "total": 10,
+      "synthetic_reason": "高质量路由泄露真值样本不足，补充 valley-free 违规、过度扩散、冲突输入等场景。",
+      "paths": {
+        "real": "data/case_catalog/leak/real.json",
+        "synthetic": "data/case_catalog/leak/synthetic.json",
+        "cases_10": "data/case_catalog/leak/cases_10.json"
+      }
+    },
+    {
+      "event_type": "FORGERY",
+      "real": 0,
+      "synthetic": 10,
+      "total": 10,
+      "synthetic_reason": "路径伪造公开案例通常缺少结构化可核验攻击者真值，暂以模拟样本覆盖典型伪造模式。",
+      "paths": {
+        "real": "data/case_catalog/forgery/real.json",
+        "synthetic": "data/case_catalog/forgery/synthetic.json",
+        "cases_10": "data/case_catalog/forgery/cases_10.json"
+      }
+    }
+  ]
+}

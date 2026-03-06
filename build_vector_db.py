@@ -5,14 +5,15 @@ import shutil
 # 确保能导入 tools 包
 sys.path.append(os.getcwd())
 from tools.rag_manager import RAGManager
+from tools.project_paths import FULL_ATTACK_CASES_FILE, RAG_DB_DIR
 
 def build_db():
     # ================= 配置区域 =================
     # 1. 输入数据: 必须是你刚才生成的溯源数据 (.jsonl)
-    json_path = "data/full_attack_cases.jsonl"
+    json_path = str(FULL_ATTACK_CASES_FILE)
     
     # 2. 输出路径: 必须与 bgp_agent.py 里的设置一致
-    db_path = "./rag_db"
+    db_path = str(RAG_DB_DIR)
     # ===========================================
 
     # 检查输入文件

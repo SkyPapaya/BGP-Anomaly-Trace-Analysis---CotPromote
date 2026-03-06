@@ -2,39 +2,20 @@ import asyncio
 import json
 import random
 import os
+import sys
 import aiofiles
 from openai import AsyncOpenAI
 from tqdm.asyncio import tqdm
 
-# --- 1. Configuration ---
-API_KEY = "sk-9944c48494394db6b8bc31b40f8a710f"
-BASE_URL = "https://api.deepseek.com"
-OUTPUT_FILE = "data/full_attack_cases.jsonl"
-CONCURRENCY = 10
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from tools.config_loader import get_entities
+from tools.project_paths import FULL_ATTACK_CASES_FILE
 
-# --- 2. Real World Entities (Anchors for realism) ---
-ENTITIES = {
-    "VICTIMS": [
-        {"asn": "15169", "name": "Google", "prefix": "8.8.8.0/24"},
-        {"asn": "13414", "name": "Twitter", "prefix": "104.244.42.0/24"},
-        {"asn": "16509", "name": "Amazon", "prefix": "54.239.0.0/16"},
-        {"asn": "3320", "name": "Deutsche Telekom", "prefix": "194.25.0.0/16"},
-        {"asn": "2914", "name": "NTT", "prefix": "129.250.0.0/16"}
-    ],
-    "ATTACKERS": [
-        {"asn": "12389", "name": "Rostelecom", "desc": "Russian ISP"},
-        {"asn": "4761", "name": "Indosat", "desc": "Indonesia ISP"},
-        {"asn": "17557", "name": "Pakistan Telecom", "desc": "State Telecom"},
-        {"asn": "4134", "name": "China Telecom", "desc": "Global Tier-1"},
-        {"asn": "9999", "name": "MaliciousVPN", "desc": "Unknown Hosting"},
-        {"asn": "33154", "name": "DQE Communications", "desc": "Regional ISP"}
-    ],
-    "TRANSIT": [
-        {"asn": "3356", "name": "Level3"},
-        {"asn": "174", "name": "Cogent"},
-        {"asn": "701", "name": "Verizon"}
-    ]
-}
+# --- 1. Configuration ---
+API_KEY = os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY", "")
+BASE_URL = "https://api.deepseek.com"
+OUTPUT_FILE = str(FULL_ATTACK_CASES_FILE)
+CONCURRENCY = 10
 
 # --- 3. Core System Prompt (English) ---
 SYSTEM_PROMPT = """
@@ -57,16 +38,27 @@ Your task is to generate a synthetic BGP incident case in JSON format based on t
 
 class AttackDataGenerator:
     def __init__(self):
+        if not API_KEY:
+            raise ValueError("缺少 API Key，请设置环境变量 DEEPSEEK_API_KEY 或 OPENAI_API_KEY。")
         self.client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
         self.sem = asyncio.Semaphore(CONCURRENCY)
 
     async def generate_case(self):
-        # 1. Select Scenario
+        entities = get_entities()
+        victims = entities.get("VICTIMS", [])
+        attackers = entities.get("ATTACKERS", [])
+        transit_list = entities.get("TRANSIT", [])
+        if not victims:
+            victims = [{"asn": "15169", "name": "Google", "prefix": "8.8.8.0/24"}]
+        if not attackers:
+            attackers = [{"asn": "12389", "name": "Rostelecom", "desc": "ISP"}]
+        if not transit_list:
+            transit_list = [{"asn": "3356", "name": "Level3"}, {"asn": "174", "name": "Cogent"}]
+
         scenario_type = random.choice(["Direct Hijack", "Path Forgery", "Route Leak"])
-        
-        victim = random.choice(ENTITIES["VICTIMS"])
-        attacker = random.choice([a for a in ENTITIES["ATTACKERS"] if a['asn'] != victim['asn']])
-        transit = random.choice(ENTITIES["TRANSIT"])
+        victim = random.choice(victims)
+        attacker = random.choice([a for a in attackers if a.get("asn") != victim.get("asn")] or attackers)
+        transit = random.choice(transit_list)
 
         # 2. Construct Prompt based on Scenario
         if scenario_type == "Direct Hijack":

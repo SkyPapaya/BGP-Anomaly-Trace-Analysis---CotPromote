@@ -1,0 +1,268 @@
+[
+  {
+    "case_id": "HIJACK-R-01",
+    "case_name": "YouTube Pakistan Telecom Hijack 2008",
+    "event_type": "HIJACK",
+    "source_type": "real",
+    "reference": "Pakistan Telecom 2008 YouTube incident",
+    "event": {
+      "case_name": "YouTube Pakistan Telecom Hijack 2008",
+      "event_type": "HIJACK",
+      "is_real": true,
+      "prefix": "208.65.153.0/24",
+      "victim": "36561",
+      "attacker": "17557",
+      "start_time": "2008-02-24T00:00:00",
+      "end_time": "2008-02-24T02:00:00",
+      "source": "anomaly"
+    }
+  },
+  {
+    "case_id": "HIJACK-R-02",
+    "case_name": "Google DNS Indosat Hijack 2014",
+    "event_type": "HIJACK",
+    "source_type": "real",
+    "reference": "Indosat 2014 route hijack",
+    "event": {
+      "case_name": "Google DNS Indosat Hijack 2014",
+      "event_type": "HIJACK",
+      "is_real": true,
+      "prefix": "8.8.8.0/24",
+      "victim": "15169",
+      "attacker": "4761",
+      "start_time": "2014-04-01T08:00:00",
+      "end_time": "2014-04-01T18:00:00",
+      "source": "anomaly"
+    }
+  },
+  {
+    "case_id": "HIJACK-R-03",
+    "case_name": "Rostelecom Cloudflare Hijack 2019",
+    "event_type": "HIJACK",
+    "source_type": "real",
+    "reference": "Rostelecom / Cloudflare 2019 incident",
+    "event": {
+      "case_name": "Rostelecom Cloudflare Hijack 2019",
+      "event_type": "HIJACK",
+      "is_real": true,
+      "prefix": "1.1.1.0/24",
+      "victim": "13335",
+      "attacker": "12389",
+      "start_time": "2019-06-01T08:00:00",
+      "end_time": "2019-06-01T18:00:00",
+      "source": "anomaly"
+    }
+  },
+  {
+    "case_id": "HIJACK-R-04",
+    "case_name": "Route53 / MyEtherWallet Hijack 2018",
+    "event_type": "HIJACK",
+    "source_type": "real",
+    "reference": "Amazon Route53 hijack reported in 2018",
+    "event": {
+      "case_name": "Route53 MyEtherWallet Hijack 2018",
+      "event_type": "HIJACK",
+      "is_real": true,
+      "prefix": "205.251.192.0/24",
+      "victim": "16509",
+      "attacker": "10297",
+      "start_time": "2018-04-24T12:00:00",
+      "end_time": "2018-04-24T18:00:00",
+      "source": "anomaly"
+    }
+  },
+  {
+    "case_id": "HIJACK-R-05",
+    "case_name": "Twitter Prefix Hijack by Rostelecom",
+    "event_type": "HIJACK",
+    "source_type": "real",
+    "reference": "Rostelecom-related Twitter prefix anomaly",
+    "event": {
+      "case_name": "Twitter Prefix Hijack by Rostelecom",
+      "event_type": "HIJACK",
+      "is_real": true,
+      "prefix": "104.244.42.0/24",
+      "victim": "13414",
+      "attacker": "12389",
+      "start_time": "2022-06-01T00:00:00",
+      "end_time": "2022-06-01T08:00:00",
+      "source": "anomaly"
+    }
+  },
+  {
+    "case_id": "HIJACK-R-06",
+    "case_name": "TTNet Turkey Prefix Hijack 2004",
+    "event_type": "HIJACK",
+    "source_type": "real",
+    "reference": "TTNet-related historical hijack record",
+    "event": {
+      "case_name": "TTNet Turkey Prefix Hijack 2004",
+      "event_type": "HIJACK",
+      "is_real": true,
+      "prefix": "212.69.96.0/19",
+      "victim": "9121",
+      "attacker": "47331",
+      "start_time": "2004-04-24T00:00:00",
+      "end_time": "2004-04-24T12:00:00",
+      "source": "anomaly"
+    }
+  },
+  {
+    "case_id": "HIJACK-S-07",
+    "case_name": "Synthetic Sub-prefix Hijack",
+    "event_type": "HIJACK",
+    "source_type": "synthetic",
+    "simulation_reason": "该案例 3 条 updates 的 prefix 均为 203.0.113.128/25，且 detected_origin 全为 65031，而 expected_origin 固定为 64496；说明同一子前缀被一致地改写 origin，符合子前缀劫持特征。由 3/3 条更新共同指向 65031，可归因为攻击者 AS65031。",
+    "expected_attacker": "65031",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-01T10:00:00",
+        "end": "2026-02-01T10:30:00"
+      },
+      "updates": [
+        {
+          "prefix": "203.0.113.128/25",
+          "as_path": "3356 65031",
+          "detected_origin": "65031",
+          "expected_origin": "64496"
+        },
+        {
+          "prefix": "203.0.113.128/25",
+          "as_path": "174 65031",
+          "detected_origin": "65031",
+          "expected_origin": "64496"
+        },
+        {
+          "prefix": "203.0.113.128/25",
+          "as_path": "1299 65031",
+          "detected_origin": "65031",
+          "expected_origin": "64496"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "HIJACK-S-08",
+    "case_name": "Synthetic MOAS-like Hijack with Noise",
+    "event_type": "HIJACK",
+    "source_type": "synthetic",
+    "simulation_reason": "该案例 4 条 updates 中有 3 条 detected_origin=65032、1 条为 65033，且 expected_origin 始终为 64497；主导异常 origin 与合法 origin 明显不一致，属于劫持。按多数一致性（3/4）判定主攻击者为 AS65032，AS65033 视为噪声/次要干扰。",
+    "expected_attacker": "65032",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-02T11:00:00",
+        "end": "2026-02-02T11:40:00"
+      },
+      "updates": [
+        {
+          "prefix": "198.51.100.0/24",
+          "as_path": "3356 65032",
+          "detected_origin": "65032",
+          "expected_origin": "64497"
+        },
+        {
+          "prefix": "198.51.100.0/24",
+          "as_path": "174 65032",
+          "detected_origin": "65032",
+          "expected_origin": "64497"
+        },
+        {
+          "prefix": "198.51.100.0/24",
+          "as_path": "2914 65033",
+          "detected_origin": "65033",
+          "expected_origin": "64497"
+        },
+        {
+          "prefix": "198.51.100.0/24",
+          "as_path": "1299 65032",
+          "detected_origin": "65032",
+          "expected_origin": "64497"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "HIJACK-S-09",
+    "case_name": "Synthetic Regional Hijack Burst",
+    "event_type": "HIJACK",
+    "source_type": "synthetic",
+    "simulation_reason": "该案例来自 4 个上游视角（3356/174/701/6939），4 条 updates 的 detected_origin 全部为 65034，且均偏离 expected_origin=64498；跨观测点一致异常，符合突发型前缀劫持。由 4/4 一致证据归因攻击者为 AS65034。",
+    "expected_attacker": "65034",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-03T09:00:00",
+        "end": "2026-02-03T09:20:00"
+      },
+      "updates": [
+        {
+          "prefix": "203.0.114.0/24",
+          "as_path": "3356 65034",
+          "detected_origin": "65034",
+          "expected_origin": "64498"
+        },
+        {
+          "prefix": "203.0.114.0/24",
+          "as_path": "174 65034",
+          "detected_origin": "65034",
+          "expected_origin": "64498"
+        },
+        {
+          "prefix": "203.0.114.0/24",
+          "as_path": "701 65034",
+          "detected_origin": "65034",
+          "expected_origin": "64498"
+        },
+        {
+          "prefix": "203.0.114.0/24",
+          "as_path": "6939 65034",
+          "detected_origin": "65034",
+          "expected_origin": "64498"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "HIJACK-S-10",
+    "case_name": "Synthetic Low-consistency Hijack",
+    "event_type": "HIJACK",
+    "source_type": "synthetic",
+    "simulation_reason": "该案例 4 条 updates 出现两组冲突 origin：65041 与 65042 各占 2 条，二者都与 expected_origin=64499 不一致；虽然可判定存在劫持类异常，但无法形成单一主攻击者共识。故该样例用于验证低一致性场景，应输出 UNCERTAIN/None。",
+    "expected_attacker": "None",
+    "accept_uncertain": true,
+    "context": {
+      "time_window": {
+        "start": "2026-02-04T14:00:00",
+        "end": "2026-02-04T14:30:00"
+      },
+      "updates": [
+        {
+          "prefix": "203.0.115.0/24",
+          "as_path": "3356 65041",
+          "detected_origin": "65041",
+          "expected_origin": "64499"
+        },
+        {
+          "prefix": "203.0.115.0/24",
+          "as_path": "174 65042",
+          "detected_origin": "65042",
+          "expected_origin": "64499"
+        },
+        {
+          "prefix": "203.0.115.0/24",
+          "as_path": "2914 65041",
+          "detected_origin": "65041",
+          "expected_origin": "64499"
+        },
+        {
+          "prefix": "203.0.115.0/24",
+          "as_path": "1299 65042",
+          "detected_origin": "65042",
+          "expected_origin": "64499"
+        }
+      ]
+    }
+  }
+]

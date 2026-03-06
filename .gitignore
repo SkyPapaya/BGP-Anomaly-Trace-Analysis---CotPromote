@@ -11,9 +11,14 @@ rag_db
 *.txt
 
 
-#data
-data
+# data/report outputs (generated)
+data/events/
+data/experiments/real_events/
 *.gz
+report/forensics/
+report/evaluation/
+report/*.json
+report/*.png
 
 # C extensions
 *.so
@@ -217,4 +222,3 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-
