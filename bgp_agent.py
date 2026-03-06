@@ -166,6 +166,10 @@ class BGPAgent:
 【📂 历史溯源档案 (RAG Reference)】
 {rag_knowledge}
 
+【RAG 使用约束】
+- RAG 案例仅作为辅助参考，不能直接当作当前事件事实。
+- 若 RAG 与工具输出（path_forensics / authority_check / graph_analysis）冲突，必须以工具证据为准。
+
 【🚨 当前案情证据 (Evidence)】
 - Target Prefix: {alert_context.get('prefix')}
 - Suspicious AS_PATH: {alert_context.get('as_path')}
@@ -306,6 +310,10 @@ class BGPAgent:
 
 【📂 历史溯源档案 (RAG Reference)】
 {rag_knowledge}
+
+【RAG 使用约束】
+- RAG 案例仅作为辅助参考，不能直接当作当前事件事实。
+- 若 RAG 与工具输出（path_forensics / authority_check / graph_analysis）冲突，必须以工具证据为准。
 
 【🚨 批量告警证据 (Batch Evidence)】
 {tw_str}
