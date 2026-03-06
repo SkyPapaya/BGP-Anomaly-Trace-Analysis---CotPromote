@@ -25,6 +25,10 @@ class RAGManager:
         # 检索参数：先粗召回，再重排，最后动态返回 top-k
         self.recall_k = 15
         self.reject_distance = 0.75
+        # 批量输入纠偏阈值
+        self.noise_min_updates = 5
+        self.noise_singleton_ratio = 0.10
+        self.low_consensus_threshold = 0.35
         print(f"INFO:RAGManager:RAG 引擎就绪 | 数据库路径: {db_path}")
 
     def load_knowledge_base(self, json_path):
@@ -388,19 +392,30 @@ class RAGManager:
         tail = " ".join(path[-2:]) if len(path) >= 2 else (" ".join(path) if path else "")
         return (prefix, detected, expected, tail)
 
-    def search_similar_cases_batch(self, updates_list, k=2):
-        """
-        批量 RAG 检索（签名聚合版）：
-        1) 先按更新签名聚合，抑制重复/噪声 updates
-        2) 对每个签名粗召回 + 重排
-        3) 按签名频次加权后合并去重，最终取 top-k
-        """
-        if not updates_list:
-            return "（未找到相似历史案例）"
-        if len(updates_list) == 1:
-            return self.search_similar_cases(updates_list[0], k=k)
+    @staticmethod
+    def _extract_attacker_from_meta(meta):
+        if not isinstance(meta, dict):
+            return ""
+        conclusion_display = meta.get("conclusion", "")
+        if not conclusion_display:
+            return ""
+        try:
+            cobj = json.loads(conclusion_display) if isinstance(conclusion_display, str) else conclusion_display
+            if not isinstance(cobj, dict):
+                return ""
+            for key in ("attacker_as", "most_likely_attacker"):
+                val = cobj.get(key)
+                if val:
+                    s = str(val).strip().upper()
+                    if s.startswith("AS"):
+                        s = s[2:]
+                    digits = "".join(ch for ch in s if ch.isdigit())
+                    return digits
+        except Exception:
+            return ""
+        return ""
 
-        # 签名聚合
+    def _build_batch_groups(self, updates_list):
         grouped = {}
         for u in updates_list:
             sig = self._signature_of_update(u)
@@ -408,11 +423,81 @@ class RAGManager:
                 grouped[sig] = {"count": 0, "sample": u}
             grouped[sig]["count"] += 1
 
+        total = len(updates_list)
+        kept = {}
+        dropped = {}
+        for sig, g in grouped.items():
+            ratio = g["count"] / total if total else 0.0
+            is_singleton_noise = (
+                total >= self.noise_min_updates
+                and g["count"] == 1
+                and ratio < self.noise_singleton_ratio
+            )
+            if is_singleton_noise:
+                dropped[sig] = g
+            else:
+                kept[sig] = g
+
+        if not kept:
+            kept = grouped
+            dropped = {}
+
+        kept_total = sum(v["count"] for v in kept.values())
+        dominant_cnt = max((v["count"] for v in kept.values()), default=0)
+        dominant_ratio = dominant_cnt / kept_total if kept_total else 0.0
+        low_consensus = dominant_ratio < self.low_consensus_threshold
+        return {
+            "grouped": grouped,
+            "kept": kept,
+            "dropped": dropped,
+            "kept_total": kept_total,
+            "dominant_ratio": dominant_ratio,
+            "low_consensus": low_consensus,
+        }
+
+    def search_similar_cases_batch_with_meta(self, updates_list, k=2):
+        """
+        批量 RAG 检索（带诊断元信息）：
+        - 输入去噪（singleton noise）
+        - 一致性评估（dominant_ratio）
+        - 候选合并重排与攻击者建议
+        """
+        if not updates_list:
+            return {
+                "text": "（未找到相似历史案例）",
+                "meta": {
+                    "low_consensus": True,
+                    "dominant_ratio": 0.0,
+                    "total_updates": 0,
+                    "kept_updates": 0,
+                    "dropped_updates": 0,
+                    "rag_top_attacker": "",
+                    "rag_top_attacker_score": 0.0,
+                },
+            }
+        if len(updates_list) == 1:
+            text = self.search_similar_cases(updates_list[0], k=k)
+            return {
+                "text": text,
+                "meta": {
+                    "low_consensus": False,
+                    "dominant_ratio": 1.0,
+                    "total_updates": 1,
+                    "kept_updates": 1,
+                    "dropped_updates": 0,
+                    "rag_top_attacker": "",
+                    "rag_top_attacker_score": 0.0,
+                },
+            }
+
+        # 去噪与一致性闸门
+        batch_groups = self._build_batch_groups(updates_list)
+        kept = batch_groups["kept"]
         merged = {}
-        sig_num = max(1, len(grouped))
+        sig_num = max(1, len(kept))
         per_sig_recall = max(6, min(self.recall_k, self.recall_k // sig_num + 4))
 
-        for g in grouped.values():
+        for g in kept.values():
             count = g["count"]
             sample = g["sample"]
             items = self._retrieve_candidates(sample, recall_k=per_sig_recall)
@@ -430,13 +515,70 @@ class RAGManager:
                     merged[doc_id] = candidate
 
         if not merged:
-            return "（未找到高置信相似案例；RAG已降权）"
+            return {
+                "text": "（未找到高置信相似案例；RAG已降权）",
+                "meta": {
+                    "low_consensus": batch_groups["low_consensus"],
+                    "dominant_ratio": batch_groups["dominant_ratio"],
+                    "total_updates": len(updates_list),
+                    "kept_updates": batch_groups["kept_total"],
+                    "dropped_updates": len(updates_list) - batch_groups["kept_total"],
+                    "rag_top_attacker": "",
+                    "rag_top_attacker_score": 0.0,
+                },
+            }
 
         ranked = sorted(merged.values(), key=lambda x: (-x["score"], x["dist"]))
         top_items = self._dynamic_select_topk(ranked, k)
         if not top_items:
-            return "（未找到高置信相似案例；RAG已降权）"
-        return self._format_results(top_items)
+            return {
+                "text": "（未找到高置信相似案例；RAG已降权）",
+                "meta": {
+                    "low_consensus": batch_groups["low_consensus"],
+                    "dominant_ratio": batch_groups["dominant_ratio"],
+                    "total_updates": len(updates_list),
+                    "kept_updates": batch_groups["kept_total"],
+                    "dropped_updates": len(updates_list) - batch_groups["kept_total"],
+                    "rag_top_attacker": "",
+                    "rag_top_attacker_score": 0.0,
+                },
+            }
+
+        attacker_scores = {}
+        for it in ranked[: max(5, k * 3)]:
+            asn = self._extract_attacker_from_meta(it.get("meta", {}))
+            if not asn:
+                continue
+            attacker_scores[asn] = attacker_scores.get(asn, 0.0) + float(it.get("score", 0.0))
+
+        rag_top_attacker = ""
+        rag_top_attacker_score = 0.0
+        if attacker_scores:
+            rag_top_attacker = max(attacker_scores.items(), key=lambda x: x[1])[0]
+            total_score = sum(attacker_scores.values()) or 1.0
+            rag_top_attacker_score = attacker_scores[rag_top_attacker] / total_score
+
+        return {
+            "text": self._format_results(top_items),
+            "meta": {
+                "low_consensus": batch_groups["low_consensus"],
+                "dominant_ratio": batch_groups["dominant_ratio"],
+                "total_updates": len(updates_list),
+                "kept_updates": batch_groups["kept_total"],
+                "dropped_updates": len(updates_list) - batch_groups["kept_total"],
+                "rag_top_attacker": rag_top_attacker,
+                "rag_top_attacker_score": rag_top_attacker_score,
+            },
+        }
+
+    def search_similar_cases_batch(self, updates_list, k=2):
+        """
+        批量 RAG 检索（签名聚合版）：
+        1) 先按更新签名聚合，抑制重复/噪声 updates
+        2) 对每个签名粗召回 + 重排
+        3) 按签名频次加权后合并去重，最终取 top-k
+        """
+        return self.search_similar_cases_batch_with_meta(updates_list, k=k)["text"]
 
 
 if __name__ == "__main__":

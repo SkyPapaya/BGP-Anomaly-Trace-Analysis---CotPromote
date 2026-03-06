@@ -1,6 +1,8 @@
 import asyncio
 import json
 import os
+import ast
+import re
 import traceback
 from datetime import datetime
 from openai import AsyncOpenAI
@@ -142,6 +144,182 @@ class BGPAgent:
                 json.dump(trace_data, f, indent=4, ensure_ascii=False)
         except Exception:
             pass
+
+    @staticmethod
+    def _normalize_asn(asn):
+        if asn is None:
+            return "None"
+        s = str(asn).strip().upper()
+        if s in ("", "NONE", "UNKNOWN"):
+            return "None"
+        if s.startswith("AS"):
+            s = s[2:]
+        digits = "".join(ch for ch in s if ch.isdigit())
+        return digits if digits else "None"
+
+    def _extract_batch_attacker(self, final_decision):
+        if not isinstance(final_decision, dict):
+            return "None"
+        return self._normalize_asn(
+            final_decision.get("most_likely_attacker", final_decision.get("attacker_as", "None"))
+        )
+
+    @staticmethod
+    def _parse_path_forensics_batch_output(text):
+        counts = {}
+        total = 0
+        if not text:
+            return counts, total
+
+        m_total = re.search(r"良性 update 数量:\s*(\d+)\s*/\s*(\d+)", str(text))
+        if m_total:
+            try:
+                total = int(m_total.group(2))
+            except ValueError:
+                total = 0
+
+        for asn, cnt in re.findall(r"AS(\d+):\s*出现\s*(\d+)\s*次", str(text)):
+            counts[asn] = counts.get(asn, 0) + int(cnt)
+
+        return counts, total
+
+    @staticmethod
+    def _parse_authority_batch_output(text):
+        counts = {}
+        if not text:
+            return counts
+
+        # 样例: 汇总: 非法 Origin AS 出现频次: {'9498': 20}
+        m = re.search(r"非法 Origin AS 出现频次:\s*(\{.*\})", str(text))
+        if not m:
+            return counts
+        try:
+            obj = ast.literal_eval(m.group(1))
+            if isinstance(obj, dict):
+                for k, v in obj.items():
+                    asn = "".join(ch for ch in str(k) if ch.isdigit())
+                    if not asn:
+                        continue
+                    try:
+                        counts[asn] = counts.get(asn, 0) + int(v)
+                    except (TypeError, ValueError):
+                        continue
+        except Exception:
+            return counts
+        return counts
+
+    def _update_tool_evidence(self, evidence, tool_name, tool_output):
+        tname = str(tool_name or "").strip().lower()
+        evidence["called_tools"].add(tname)
+
+        if tname == "path_forensics":
+            path_counts, parsed_total = self._parse_path_forensics_batch_output(tool_output)
+            for asn, cnt in path_counts.items():
+                evidence["path_suspects"][asn] = evidence["path_suspects"].get(asn, 0) + cnt
+            if parsed_total:
+                evidence["parsed_total_updates"] = max(evidence.get("parsed_total_updates", 0), parsed_total)
+
+        if tname == "authority_check":
+            invalid_counts = self._parse_authority_batch_output(tool_output)
+            for asn, cnt in invalid_counts.items():
+                evidence["rpki_invalid"][asn] = evidence["rpki_invalid"].get(asn, 0) + cnt
+
+    @staticmethod
+    def _dominant_from_counter(counter):
+        if not counter:
+            return ("None", 0, 0.0)
+        asn, cnt = max(counter.items(), key=lambda x: x[1])
+        total = sum(counter.values())
+        ratio = cnt / total if total else 0.0
+        return asn, cnt, ratio
+
+    def _build_uncertain_decision(self, reason):
+        return {
+            "status": "UNCERTAIN",
+            "most_likely_attacker": "None",
+            "confidence": "Low",
+            "summary": f"证据存在冲突或一致性不足，暂不输出确定攻击者。原因: {reason}",
+        }
+
+    def _batch_correction_gate(self, final_decision, rag_meta, evidence, total_updates):
+        """
+        批量纠偏闸门：
+        1) 一致性不足时，要求补充工具证据或降级 UNCERTAIN
+        2) RAG 与工具证据冲突时，拒绝被 RAG 误导的结论
+        """
+        if not isinstance(final_decision, dict):
+            return {"action": "revise", "reason": "final_decision 为空或格式错误。"}
+
+        pred_asn = self._extract_batch_attacker(final_decision)
+        status = str(final_decision.get("status", "UNKNOWN")).upper()
+        confidence = str(final_decision.get("confidence", "Low")).upper()
+        rag_top = self._normalize_asn(rag_meta.get("rag_top_attacker"))
+        rag_top_score = float(rag_meta.get("rag_top_attacker_score", 0.0) or 0.0)
+        low_consensus = bool(rag_meta.get("low_consensus", False))
+
+        tool_asn_path, tool_cnt_path, tool_ratio_path = self._dominant_from_counter(evidence["path_suspects"])
+        tool_asn_rpki, tool_cnt_rpki, tool_ratio_rpki = self._dominant_from_counter(evidence["rpki_invalid"])
+
+        strong_path = tool_asn_path != "None" and (tool_cnt_path >= 2 or tool_ratio_path >= 0.60)
+        strong_rpki = tool_asn_rpki != "None" and (tool_cnt_rpki >= 2 or tool_ratio_rpki >= 0.60)
+        tools_ready = ("path_forensics" in evidence["called_tools"]) and ("authority_check" in evidence["called_tools"])
+        strong_tools = strong_path or strong_rpki
+
+        # Gate-1: 一致性不足，且工具证据薄弱 -> 不给确定归因
+        if low_consensus and not strong_tools:
+            if not tools_ready:
+                return {
+                    "action": "revise",
+                    "reason": "当前告警一致性不足，且缺少 path_forensics + authority_check 的交叉证据，请先补证后再结案。",
+                }
+            return {
+                "action": "accept",
+                "decision": self._build_uncertain_decision(
+                    f"输入一致性低(dominant_ratio={rag_meta.get('dominant_ratio', 0):.2f})且工具证据不充分"
+                ),
+            }
+
+        # Gate-2: 工具证据强且结论与工具主证据冲突 -> 要求重判
+        if strong_path and pred_asn not in ("None", tool_asn_path):
+            return {
+                "action": "revise",
+                "reason": f"path_forensics 主证据指向 AS{tool_asn_path}，当前结论为 AS{pred_asn}，请解释冲突并重判。",
+            }
+        if strong_rpki and pred_asn not in ("None", tool_asn_rpki):
+            return {
+                "action": "revise",
+                "reason": f"authority_check 主证据指向 AS{tool_asn_rpki}，当前结论为 AS{pred_asn}，请解释冲突并重判。",
+            }
+
+        # Gate-3: 高置信度但只被 RAG 牵引，且与工具主证据冲突
+        if (
+            rag_top not in ("", "None")
+            and rag_top_score >= 0.60
+            and pred_asn == rag_top
+            and strong_tools
+        ):
+            tool_major = tool_asn_path if strong_path else tool_asn_rpki
+            if tool_major not in ("None", rag_top):
+                return {
+                    "action": "revise",
+                    "reason": f"RAG 倾向 AS{rag_top}，但工具主证据指向 AS{tool_major}。请降低 RAG 权重并以工具证据重判。",
+                }
+
+        # Gate-4: 明显矛盾的 BENIGN 结论
+        if status == "BENIGN" and strong_tools:
+            return {
+                "action": "revise",
+                "reason": "当前为 BENIGN，但工具证据已出现强异常指向，请重新评估。",
+            }
+
+        # Gate-5: 高置信度结案但证据基础薄弱
+        if confidence == "HIGH" and not strong_tools and total_updates >= 5:
+            return {
+                "action": "revise",
+                "reason": "当前给出 High 置信度，但缺少足够强的工具证据，请补充交叉验证后再结案。",
+            }
+
+        return {"action": "accept", "decision": final_decision}
 
     async def diagnose(self, alert_context, verbose=False):
         """
@@ -287,13 +465,33 @@ class BGPAgent:
         if verbose:
             print(f"\n🕵️‍♂️ [Agent] 批量溯源: 共 {len(updates)} 条告警 updates ...")
 
-        # --- Phase 1: RAG 知识检索（汇总所有 updates 分别查询，合并去重取 top-k）---
+        # --- Phase 1: RAG 知识检索（含批量输入去噪与一致性诊断）---
         try:
-            rag_knowledge = self.rag.search_similar_cases_batch(updates, k=2)
+            rag_payload = self.rag.search_similar_cases_batch_with_meta(updates, k=2)
+            rag_knowledge = rag_payload.get("text", "（未找到相似历史案例）")
+            rag_meta = rag_payload.get("meta", {})
             if verbose and "未找到" not in str(rag_knowledge):
                 print(f"📚 [RAG] 已加载历史溯源档案（汇总 {len(updates)} 条 updates 检索）...")
+            if verbose:
+                print(
+                    "🧪 [RAG-纠偏] "
+                    f"total={rag_meta.get('total_updates', len(updates))}, "
+                    f"kept={rag_meta.get('kept_updates', len(updates))}, "
+                    f"dropped={rag_meta.get('dropped_updates', 0)}, "
+                    f"dominant_ratio={rag_meta.get('dominant_ratio', 1.0):.2f}, "
+                    f"low_consensus={rag_meta.get('low_consensus', False)}"
+                )
         except Exception:
             rag_knowledge = "(RAG Database Unavailable)"
+            rag_meta = {
+                "low_consensus": False,
+                "dominant_ratio": 1.0,
+                "total_updates": len(updates),
+                "kept_updates": len(updates),
+                "dropped_updates": 0,
+                "rag_top_attacker": "",
+                "rag_top_attacker_score": 0.0,
+            }
 
         # --- Phase 2: 构造批量 Prompt ---
         time_info = alert_batch.get("time_window", {})
@@ -314,6 +512,8 @@ class BGPAgent:
 【RAG 使用约束】
 - RAG 案例仅作为辅助参考，不能直接当作当前事件事实。
 - 若 RAG 与工具输出（path_forensics / authority_check / graph_analysis）冲突，必须以工具证据为准。
+- RAG 批量纠偏统计: total={rag_meta.get('total_updates', len(updates))}, kept={rag_meta.get('kept_updates', len(updates))}, dropped={rag_meta.get('dropped_updates', 0)}, dominant_ratio={rag_meta.get('dominant_ratio', 1.0):.2f}。
+- 若一致性不足（low_consensus=True），在工具证据不足时应输出 UNCERTAIN，而非强行锁定攻击者。
 
 【🚨 批量告警证据 (Batch Evidence)】
 {tw_str}
@@ -324,15 +524,23 @@ class BGPAgent:
 """
         messages = [
             {"role": "system", "content": dynamic_prompt},
-            {"role": "user", "content": "请分析上述批量告警，使用 path_forensics 等工具综合溯源，输出 most_likely_attacker 及 confidence。"}
+            {"role": "user", "content": "请分析上述批量告警，优先调用 path_forensics 与 authority_check 进行交叉验证，再输出 most_likely_attacker 与 confidence。"}
         ]
 
         trace = {
             "target": alert_batch,
             "start_time": datetime.now().isoformat(),
             "rag_context": rag_knowledge,
+            "rag_diagnostics": rag_meta,
             "chain_of_thought": [],
             "final_result": None
+        }
+
+        tool_evidence = {
+            "called_tools": set(),
+            "path_suspects": {},
+            "rpki_invalid": {},
+            "parsed_total_updates": 0,
         }
 
         # --- Phase 3: 推理循环 ---
@@ -366,6 +574,7 @@ class BGPAgent:
                 if verbose:
                     print(f"🛠️  Agent 调用工具: {tool_req}")
                 tool_output = self.toolkit.call_tool(tool_req, alert_batch, is_batch=True)
+                self._update_tool_evidence(tool_evidence, tool_req, tool_output)
                 step_record["tool_output"] = tool_output
                 trace["chain_of_thought"].append(step_record)
 
@@ -374,11 +583,27 @@ class BGPAgent:
                 continue
 
             if final_decision:
-                trace["final_result"] = final_decision
+                gate = self._batch_correction_gate(
+                    final_decision=final_decision,
+                    rag_meta=rag_meta,
+                    evidence=tool_evidence,
+                    total_updates=len(updates),
+                )
+                if gate.get("action") == "revise":
+                    trace["chain_of_thought"].append(step_record)
+                    messages.append({"role": "assistant", "content": json.dumps(resp_json)})
+                    messages.append({
+                        "role": "user",
+                        "content": f"【纠偏闸门提示】{gate.get('reason')}\n请补充工具证据并重新给出 final_decision。"
+                    })
+                    continue
+
+                final_fixed = gate.get("decision", final_decision)
+                trace["final_result"] = final_fixed
                 trace["chain_of_thought"].append(step_record)
                 if verbose:
-                    attacker = final_decision.get("most_likely_attacker", final_decision.get("attacker_as", "Unknown"))
-                    conf = final_decision.get("confidence", "")
+                    attacker = final_fixed.get("most_likely_attacker", final_fixed.get("attacker_as", "Unknown"))
+                    conf = final_fixed.get("confidence", "")
                     print(f"✅ 结案! 最可能攻击者: {attacker} (置信度: {conf})")
                 self._save_report(trace, is_batch=True)
                 return trace
@@ -394,7 +619,17 @@ class BGPAgent:
             messages.append({"role": "user", "content": "分析结束。请立即输出 JSON，必须包含 most_likely_attacker 和 confidence。"})
             final_resp = await self._call_llm(messages)
             if final_resp and final_resp.get("final_decision"):
-                trace["final_result"] = final_resp.get("final_decision")
+                final_decision = final_resp.get("final_decision")
+                gate = self._batch_correction_gate(
+                    final_decision=final_decision,
+                    rag_meta=rag_meta,
+                    evidence=tool_evidence,
+                    total_updates=len(updates),
+                )
+                if gate.get("action") == "accept":
+                    trace["final_result"] = gate.get("decision", final_decision)
+                else:
+                    trace["final_result"] = self._build_uncertain_decision("强制结算阶段仍未通过纠偏闸门")
                 trace["chain_of_thought"].append({
                     "round": "force",
                     "thought": final_resp.get("thought_process"),
