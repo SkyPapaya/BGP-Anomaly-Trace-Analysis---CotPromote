@@ -21,6 +21,7 @@ except ImportError:
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from tools.update_fetcher import fetch_and_filter
+from tools.project_paths import EVENTS_DIR, TEST_EVENTS_FILE
 
 
 def load_local_events(path):
@@ -56,8 +57,8 @@ def _safe_event_id(e):
 
 def main():
     parser = argparse.ArgumentParser(description="Step1: 从本地案例下载 BGP updates 并过滤")
-    parser.add_argument("--input", default="data/test_events.json", help="待测案例 JSON 路径")
-    parser.add_argument("--output", default="data/events", help="输出目录")
+    parser.add_argument("--input", default=str(TEST_EVENTS_FILE), help="待测案例 JSON 路径")
+    parser.add_argument("--output", default=str(EVENTS_DIR), help="输出目录")
     parser.add_argument(
         "--source",
         choices=["ris_mrt", "ripestat", "auto"],

@@ -43,7 +43,7 @@
           v
 [评测与报告]
   performance_test.py
-  report/forensics_*.json
+  report/forensics/forensics_*.json
 ```
 
 ---
@@ -150,7 +150,7 @@ pip install openai chromadb sentence-transformers neo4j requests aiofiles tqdm t
 - `suspicious_updates.json`：过滤后的可疑 updates
 - `raw_bgplay.json`：原始抓取数据（可选）
 
-### 6.2 Agent 输出：`report/forensics_*.json`
+### 6.2 Agent 输出：`report/forensics/forensics_*.json`
 
 关键字段：
 

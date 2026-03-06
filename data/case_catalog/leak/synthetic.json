@@ -1,0 +1,195 @@
+[
+  {
+    "case_id": "LEAK-S-06",
+    "case_name": "Synthetic Peer-to-Peer Leak (Valley-Free Violation)",
+    "event_type": "LEAK",
+    "source_type": "synthetic",
+    "simulation_reason": "3 条 updates 的 as_path 均呈现“上游 -> 65051 -> 13335”，且 detected_origin 与 expected_origin 同为 13335；说明 origin 合法，但中间 AS65051 将本不应对外扩散的路径传播到多个上游，符合路由泄露特征。由重复出现的中间泄露节点归因为 AS65051。",
+    "expected_attacker": "65051",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-10T10:00:00",
+        "end": "2026-02-10T10:30:00"
+      },
+      "updates": [
+        {
+          "prefix": "1.1.1.0/24",
+          "as_path": "3356 65051 13335",
+          "detected_origin": "13335",
+          "expected_origin": "13335"
+        },
+        {
+          "prefix": "1.1.1.0/24",
+          "as_path": "174 65051 13335",
+          "detected_origin": "13335",
+          "expected_origin": "13335"
+        },
+        {
+          "prefix": "1.1.1.0/24",
+          "as_path": "1299 65051 13335",
+          "detected_origin": "13335",
+          "expected_origin": "13335"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "LEAK-S-07",
+    "case_name": "Synthetic Transit Leak with Over-Propagation",
+    "event_type": "LEAK",
+    "source_type": "synthetic",
+    "simulation_reason": "3 条 updates 均为“上游 -> 65052 -> 64496”，并且 detected_origin=expected_origin=64496；origin 未被篡改但传播链出现统一异常中转 AS65052，属于泄露而非劫持。多视角一致指向泄露者 AS65052。",
+    "expected_attacker": "65052",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-11T11:00:00",
+        "end": "2026-02-11T11:40:00"
+      },
+      "updates": [
+        {
+          "prefix": "203.0.120.0/24",
+          "as_path": "701 65052 64496",
+          "detected_origin": "64496",
+          "expected_origin": "64496"
+        },
+        {
+          "prefix": "203.0.120.0/24",
+          "as_path": "3356 65052 64496",
+          "detected_origin": "64496",
+          "expected_origin": "64496"
+        },
+        {
+          "prefix": "203.0.120.0/24",
+          "as_path": "2914 65052 64496",
+          "detected_origin": "64496",
+          "expected_origin": "64496"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "LEAK-S-08",
+    "case_name": "Synthetic Regional Leak Burst",
+    "event_type": "LEAK",
+    "source_type": "synthetic",
+    "simulation_reason": "4 条 updates 在不同上游（3257/6939/1299/174）都出现“-> 65053 -> 64520”结构，且 origin 与期望一致；这表明同一中间 AS65053 将路由异常扩散到多观测点，符合区域性泄露 burst。由 4/4 一致中间节点归因为 AS65053。",
+    "expected_attacker": "65053",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-12T09:00:00",
+        "end": "2026-02-12T09:25:00"
+      },
+      "updates": [
+        {
+          "prefix": "198.51.120.0/24",
+          "as_path": "3257 65053 64520",
+          "detected_origin": "64520",
+          "expected_origin": "64520"
+        },
+        {
+          "prefix": "198.51.120.0/24",
+          "as_path": "6939 65053 64520",
+          "detected_origin": "64520",
+          "expected_origin": "64520"
+        },
+        {
+          "prefix": "198.51.120.0/24",
+          "as_path": "1299 65053 64520",
+          "detected_origin": "64520",
+          "expected_origin": "64520"
+        },
+        {
+          "prefix": "198.51.120.0/24",
+          "as_path": "174 65053 64520",
+          "detected_origin": "64520",
+          "expected_origin": "64520"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "LEAK-S-09",
+    "case_name": "Synthetic Leak with Minority Noise",
+    "event_type": "LEAK",
+    "source_type": "synthetic",
+    "simulation_reason": "4 条 updates 中 3 条路径包含中间 AS65054，1 条包含 65055，且 origin 一直为合法的 64530；这是“合法 origin + 主泄露者 + 少量噪声”模式。按多数路径证据（3/4）归因泄露者为 AS65054，65055 作为干扰项。",
+    "expected_attacker": "65054",
+    "accept_uncertain": false,
+    "context": {
+      "time_window": {
+        "start": "2026-02-13T14:00:00",
+        "end": "2026-02-13T14:35:00"
+      },
+      "updates": [
+        {
+          "prefix": "203.0.121.0/24",
+          "as_path": "3356 65054 64530",
+          "detected_origin": "64530",
+          "expected_origin": "64530"
+        },
+        {
+          "prefix": "203.0.121.0/24",
+          "as_path": "174 65054 64530",
+          "detected_origin": "64530",
+          "expected_origin": "64530"
+        },
+        {
+          "prefix": "203.0.121.0/24",
+          "as_path": "1299 65055 64530",
+          "detected_origin": "64530",
+          "expected_origin": "64530"
+        },
+        {
+          "prefix": "203.0.121.0/24",
+          "as_path": "2914 65054 64530",
+          "detected_origin": "64530",
+          "expected_origin": "64530"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "LEAK-S-10",
+    "case_name": "Synthetic Low-Consensus Leak",
+    "event_type": "LEAK",
+    "source_type": "synthetic",
+    "simulation_reason": "4 条 updates 分裂为“65056 -> 64531”与“65057 -> 64531”各 2 条，detected_origin 与 expected_origin 均一致；可判断是泄露类传播异常，但中间泄露 AS 无主导共识。该案例用于验证冲突输入下系统应降级为 UNCERTAIN/None。",
+    "expected_attacker": "None",
+    "accept_uncertain": true,
+    "context": {
+      "time_window": {
+        "start": "2026-02-14T16:00:00",
+        "end": "2026-02-14T16:30:00"
+      },
+      "updates": [
+        {
+          "prefix": "198.51.121.0/24",
+          "as_path": "701 65056 64531",
+          "detected_origin": "64531",
+          "expected_origin": "64531"
+        },
+        {
+          "prefix": "198.51.121.0/24",
+          "as_path": "3356 65057 64531",
+          "detected_origin": "64531",
+          "expected_origin": "64531"
+        },
+        {
+          "prefix": "198.51.121.0/24",
+          "as_path": "174 65056 64531",
+          "detected_origin": "64531",
+          "expected_origin": "64531"
+        },
+        {
+          "prefix": "198.51.121.0/24",
+          "as_path": "1299 65057 64531",
+          "detected_origin": "64531",
+          "expected_origin": "64531"
+        }
+      ]
+    }
+  }
+]

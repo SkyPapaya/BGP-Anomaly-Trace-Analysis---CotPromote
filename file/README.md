@@ -137,9 +137,9 @@
 | | Phase 2 | 构造 System + User 消息 |
 | | Phase 3 | 最多 3 轮：`_call_llm()` → 解析 `tool_request` → `toolkit.call_tool()` → 将工具结果喂回 LLM |
 | | Phase 4 | 若未结案则强制要求输出 `final_decision` |
-| | `_save_report(trace)` | 写入 `report/forensics_batch_*.json` |
+| | `_save_report(trace)` | 写入 `report/forensics/forensics_batch_*.json` |
 
-**报告格式**（`report/forensics_batch_{prefix}_{N}updates_{timestamp}.json`）：
+**报告格式**（`report/forensics/forensics_batch_{prefix}_{N}updates_{timestamp}.json`）：
 
 ```json
 {

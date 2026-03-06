@@ -1,0 +1,242 @@
+[
+    {
+        "name": "YouTube / Pakistan Telecom (2008)",
+        "type": "HIJACK",
+        "description": "Classic censorship gone wrong. Origin changed to AS17557.",
+        "expected_attacker": "17557",
+        "context": {
+            "prefix": "208.65.153.0/24",
+            "as_path": "3491 17557",
+            "detected_origin": "17557",
+            "expected_origin": "36561"
+        }
+    },
+    {
+        "name": "Twitter / Rostelecom (2022)",
+        "type": "HIJACK",
+        "description": "Russian ISP originating Twitter prefix.",
+        "expected_attacker": "12389",
+        "context": {
+            "prefix": "104.244.42.0/24",
+            "as_path": "174 12389",
+            "detected_origin": "12389",
+            "expected_origin": "13414"
+        }
+    },
+    {
+        "name": "Google / Indosat (2014)",
+        "type": "HIJACK",
+        "description": "Indonesian ISP leaking internal routes as origin.",
+        "expected_attacker": "4761",
+        "context": {
+            "prefix": "209.85.128.0/24",
+            "as_path": "3356 4761",
+            "detected_origin": "4761",
+            "expected_origin": "15169"
+        }
+    },
+    {
+        "name": "Amazon DNS / eNet (2018)",
+        "type": "HIJACK",
+        "description": "Crypto wallet attack via Route53 hijack.",
+        "expected_attacker": "10297",
+        "context": {
+            "prefix": "205.251.192.0/24",
+            "as_path": "6939 10297",
+            "detected_origin": "10297",
+            "expected_origin": "16509"
+        }
+    },
+    {
+        "name": "Cloudflare / Verizon Leak (2019)",
+        "type": "LEAK",
+        "description": "DQE (33154) leaked Cloudflare routes to Verizon.",
+        "expected_attacker": "33154",
+        "context": {
+            "prefix": "1.1.1.1/32",
+            "as_path": "701 33154 13335",
+            "detected_origin": "13335",
+            "expected_origin": "13335"
+        }
+    },
+    {
+        "name": "Google / MainOne Leak (2018)",
+        "type": "LEAK",
+        "description": "Nigerian ISP leaking Google to China Telecom.",
+        "expected_attacker": "37282",
+        "context": {
+            "prefix": "216.58.200.0/24",
+            "as_path": "4134 37282 15169",
+            "detected_origin": "15169",
+            "expected_origin": "15169"
+        }
+    },
+    {
+        "name": "Level3 / Telekom Malaysia Leak (2015)",
+        "type": "LEAK",
+        "description": "TM leaked Level3 routes globally.",
+        "expected_attacker": "4788",
+        "context": {
+            "prefix": "4.0.0.0/8",
+            "as_path": "3356 4788 3356",
+            "detected_origin": "3356",
+            "expected_origin": "3356"
+        }
+    },
+    {
+        "name": "Path Forgery: Fake Google Link",
+        "type": "FORGERY",
+        "description": "Attacker AS666 claims to be upstream of Google AS15169.",
+        "expected_attacker": "666",
+        "context": {
+            "prefix": "8.8.8.0/24",
+            "as_path": "3356 666 15169",
+            "detected_origin": "15169",
+            "expected_origin": "15169"
+        }
+    },
+    {
+        "name": "Path Forgery: Fake Amazon Link",
+        "type": "FORGERY",
+        "description": "Attacker AS999 claims to be upstream of Amazon AS16509.",
+        "expected_attacker": "999",
+        "context": {
+            "prefix": "54.239.0.0/16",
+            "as_path": "174 999 16509",
+            "detected_origin": "16509",
+            "expected_origin": "16509"
+        }
+    },
+    {
+        "name": "Direct Hijack: China Telecom / US DoD",
+        "type": "HIJACK",
+        "description": "A hypothetical scenario mimicking past incidents.",
+        "expected_attacker": "4134",
+        "context": {
+            "prefix": "6.0.0.0/8",
+            "as_path": "209 4134",
+            "detected_origin": "4134",
+            "expected_origin": "721"
+        }
+    },
+    {
+        "name": "Normal: Google Direct",
+        "type": "BENIGN",
+        "description": "Normal traffic, no attacker.",
+        "expected_attacker": "None",
+        "context": {
+            "prefix": "8.8.8.0/24",
+            "as_path": "3356 15169",
+            "detected_origin": "15169",
+            "expected_origin": "15169"
+        }
+    },
+    {
+        "name": "Normal: Cloudflare Direct",
+        "type": "BENIGN",
+        "description": "Normal traffic.",
+        "expected_attacker": "None",
+        "context": {
+            "prefix": "1.1.1.1/24",
+            "as_path": "174 13335",
+            "detected_origin": "13335",
+            "expected_origin": "13335"
+        }
+    },
+    {
+        "name": "Normal: Multi-Provider Path",
+        "type": "BENIGN",
+        "description": "Long but valid path.",
+        "expected_attacker": "None",
+        "context": {
+            "prefix": "1.0.0.0/24",
+            "as_path": "2914 174 13335",
+            "detected_origin": "13335",
+            "expected_origin": "13335"
+        }
+    },
+    {
+        "name": "MOAS: Valid Backup",
+        "type": "BENIGN",
+        "description": "Google announcing via a subsidiary or acquisition (Hypothetical Valid MOAS).",
+        "expected_attacker": "None",
+        "context": {
+            "prefix": "8.8.8.0/24",
+            "as_path": "15169",
+            "detected_origin": "15169",
+            "expected_origin": "15169"
+        }
+    },
+    {
+        "name": "Sub-Prefix Hijack: YouTube",
+        "type": "HIJACK",
+        "description": "More specific prefix announced by attacker.",
+        "expected_attacker": "17557",
+        "context": {
+            "prefix": "208.65.153.128/25",
+            "as_path": "3491 17557",
+            "detected_origin": "17557",
+            "expected_origin": "36561"
+        }
+    },
+    {
+        "name": "Private ASN Leak",
+        "type": "LEAK",
+        "description": "Private AS 65000 appearing in public path.",
+        "expected_attacker": "12345",
+        "context": {
+            "prefix": "1.2.3.0/24",
+            "as_path": "3356 12345 65000",
+            "detected_origin": "65000",
+            "expected_origin": "12345"
+        }
+    },
+    {
+        "name": "Prepending Hijack",
+        "type": "HIJACK",
+        "description": "Attacker adds legitimate AS to path but stays at origin.",
+        "expected_attacker": "666",
+        "context": {
+            "prefix": "8.8.8.0/24",
+            "as_path": "174 666",
+            "detected_origin": "666",
+            "expected_origin": "15169"
+        }
+    },
+    {
+        "name": "Route Leak: Peer to Peer",
+        "type": "LEAK",
+        "description": "Traffic passing between two peers via a customer (Valley violation).",
+        "expected_attacker": "999",
+        "context": {
+            "prefix": "50.0.0.0/8",
+            "as_path": "174 999 3356",
+            "detected_origin": "3356",
+            "expected_origin": "3356"
+        }
+    },
+    {
+        "name": "Tier-1 Hijack (Hypothetical)",
+        "type": "HIJACK",
+        "description": "Level3 accidentally originating Google routes.",
+        "expected_attacker": "3356",
+        "context": {
+            "prefix": "8.8.8.0/24",
+            "as_path": "174 3356",
+            "detected_origin": "3356",
+            "expected_origin": "15169"
+        }
+    },
+    {
+        "name": "Akamai / China Telecom (Accidental)",
+        "type": "HIJACK",
+        "description": "CT originating Akamai routes.",
+        "expected_attacker": "4134",
+        "context": {
+            "prefix": "23.200.0.0/24",
+            "as_path": "209 4134",
+            "detected_origin": "4134",
+            "expected_origin": "20940"
+        }
+    }
+]

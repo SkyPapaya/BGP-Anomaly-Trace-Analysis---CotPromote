@@ -8,16 +8,31 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from tools.project_paths import CASE_CATALOG_DIR
 
 ROOT = Path(__file__).resolve().parents[1]
-CATALOG = ROOT / "data" / "case_catalog"
+CATALOG = CASE_CATALOG_DIR
 
 
 def load_json(path: Path):
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def load_json_or_empty(path: Path, errors: list[str], label: str):
+    if not path.exists():
+        errors.append(f"[{label}] 文件不存在: {path}")
+        return []
+    try:
+        return load_json(path)
+    except Exception as e:
+        errors.append(f"[{label}] 文件读取失败: {path} ({e})")
+        return []
 
 
 def main() -> int:
@@ -32,9 +47,9 @@ def main() -> int:
         synthetic_path = ROOT / paths.get("synthetic", "")
         cases_path = ROOT / paths.get("cases_10", "")
 
-        real_cases = load_json(real_path)
-        synthetic_cases = load_json(synthetic_path)
-        merged_cases = load_json(cases_path)
+        real_cases = load_json_or_empty(real_path, errors, event_type or "UNKNOWN")
+        synthetic_cases = load_json_or_empty(synthetic_path, errors, event_type or "UNKNOWN")
+        merged_cases = load_json_or_empty(cases_path, errors, event_type or "UNKNOWN")
 
         if len(merged_cases) != 10:
             errors.append(f"[{event_type}] cases_10 数量不是 10，而是 {len(merged_cases)}")

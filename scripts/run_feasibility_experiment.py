@@ -19,6 +19,12 @@ from typing import Dict, List, Any
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from bgp_agent import BGPAgent
+from tools.project_paths import (
+    BENCHMARK_REAL_FILE,
+    BENCHMARK_SYNTHETIC_FILE,
+    EXPERIMENT_REAL_EVENTS_DIR,
+    FEASIBILITY_REPORT,
+)
 
 
 def normalize_asn(val) -> str:
@@ -253,17 +259,17 @@ def print_summary(title: str, summary: Dict[str, Any], by_type: Dict[str, Any]) 
 
 async def main():
     parser = argparse.ArgumentParser(description="BGP 溯源可行性实验（真实事件优先）")
-    parser.add_argument("--real-input", default="data/benchmark_events_real.json", help="真实事件配置文件")
-    parser.add_argument("--real-events-dir", default="data/experiments/real_events", help="真实事件抓取输出目录")
+    parser.add_argument("--real-input", default=str(BENCHMARK_REAL_FILE), help="真实事件配置文件")
+    parser.add_argument("--real-events-dir", default=str(EXPERIMENT_REAL_EVENTS_DIR), help="真实事件抓取输出目录")
     parser.add_argument("--source", choices=["ris_mrt", "ripestat", "auto"], default="auto", help="真实事件抓取数据源")
-    parser.add_argument("--synthetic-input", default="data/benchmark_synthetic_cases.json", help="模拟事件配置文件")
+    parser.add_argument("--synthetic-input", default=str(BENCHMARK_SYNTHETIC_FILE), help="模拟事件配置文件")
     parser.add_argument("--min-real-cases", type=int, default=6, help="真实非 fallback 事件最小数量")
     parser.add_argument(
         "--required-types",
         default="HIJACK,LEAK,BENIGN",
         help="真实非 fallback 必须覆盖的事件类型，逗号分隔",
     )
-    parser.add_argument("--report-out", default="report/feasibility_report.json", help="实验报告输出路径")
+    parser.add_argument("--report-out", default=str(FEASIBILITY_REPORT), help="实验报告输出路径")
     parser.add_argument("--disable-synthetic", action="store_true", help="禁用模拟事件补充")
     args = parser.parse_args()
 

@@ -1,0 +1,182 @@
+[
+  {
+    "prefix": "64.233.161.0/24",
+    "victim": "15169",
+    "attacker": "174",
+    "start_time": "2005-05-07T14:37:00",
+    "end_time": "2005-05-08T10:52:00",
+    "source": "anomaly",
+    "note": "Google 2005 劫持, Cogent AS174 非法宣告"
+  },
+  {
+    "prefix": "208.65.153.0/24",
+    "victim": "36692",
+    "attacker": "17557",
+    "start_time": "2008-02-24T00:00:00",
+    "end_time": "2008-02-24T02:00:00",
+    "source": "anomaly",
+    "note": "Pakistan Telecom 2008 YouTube 劫持"
+  },
+  {
+    "prefix": "8.8.8.0/24",
+    "victim": "15169",
+    "attacker": "4761",
+    "start_time": "2014-04-01T08:00:00",
+    "end_time": "2014-04-01T18:00:00",
+    "source": "anomaly",
+    "note": "Indosat 2014 劫持 Google DNS"
+  },
+  {
+    "prefix": "104.244.42.0/24",
+    "victim": "13414",
+    "attacker": "12389",
+    "start_time": "2014-08-01T00:00:00",
+    "end_time": "2014-08-01T12:00:00",
+    "source": "anomaly",
+    "note": "Rostelecom 劫持 Twitter 前缀"
+  },
+  {
+    "prefix": "8.8.8.0/24",
+    "victim": "15169",
+    "attacker": "33154",
+    "start_time": "2015-03-15T10:00:00",
+    "end_time": "2015-03-15T14:00:00",
+    "source": "anomaly",
+    "note": "DQE Communications 劫持 Google"
+  },
+  {
+    "prefix": "208.65.153.0/24",
+    "victim": "36692",
+    "attacker": "4788",
+    "start_time": "2008-03-01T00:00:00",
+    "end_time": "2008-03-01T08:00:00",
+    "source": "anomaly",
+    "note": "Malaysia 2008 YouTube 劫持"
+  },
+  {
+    "prefix": "54.239.0.0/16",
+    "victim": "16509",
+    "attacker": "4134",
+    "start_time": "2010-04-06T00:00:00",
+    "end_time": "2010-04-06T08:00:00",
+    "source": "anomaly",
+    "note": "China Telecom 2010 泄露 Amazon 路由"
+  },
+  {
+    "prefix": "1.1.1.0/24",
+    "victim": "13335",
+    "attacker": "12389",
+    "start_time": "2019-06-01T08:00:00",
+    "end_time": "2019-06-01T18:00:00",
+    "source": "anomaly",
+    "note": "Rostelecom 劫持 Cloudflare"
+  },
+  {
+    "prefix": "8.8.8.0/24",
+    "victim": "15169",
+    "attacker": "39412",
+    "start_time": "2022-05-17T00:00:00",
+    "end_time": "2022-05-17T06:00:00",
+    "source": "anomaly",
+    "note": "Google 2022 Pakistan AS39412 泄露"
+  },
+  {
+    "prefix": "52.94.0.0/16",
+    "victim": "16509",
+    "attacker": "38634",
+    "start_time": "2018-11-06T00:00:00",
+    "end_time": "2018-11-06T04:00:00",
+    "source": "anomaly",
+    "note": "AWS 2018 意外泄露"
+  },
+  {
+    "prefix": "157.240.0.0/16",
+    "victim": "32934",
+    "attacker": "64512",
+    "start_time": "2021-10-04T14:00:00",
+    "end_time": "2021-10-04T20:00:00",
+    "source": "anomaly",
+    "note": "Facebook/Meta 2021 路由泄露"
+  },
+  {
+    "prefix": "212.69.96.0/19",
+    "victim": "9121",
+    "attacker": "47331",
+    "start_time": "2004-04-24T00:00:00",
+    "end_time": "2004-04-24T12:00:00",
+    "source": "anomaly",
+    "note": "TTNet Turkey 2004 劫持"
+  },
+  {
+    "prefix": "104.244.42.0/24",
+    "victim": "13414",
+    "attacker": "9999",
+    "start_time": "2020-01-15T00:00:00",
+    "end_time": "2020-01-15T06:00:00",
+    "source": "anomaly",
+    "note": "模拟 VPN/恶意 AS 劫持 Twitter"
+  },
+  {
+    "prefix": "129.250.0.0/16",
+    "victim": "2914",
+    "attacker": "174",
+    "start_time": "2012-11-01T00:00:00",
+    "end_time": "2012-11-01T08:00:00",
+    "source": "anomaly",
+    "note": "NTT 前缀劫持"
+  },
+  {
+    "prefix": "194.25.0.0/16",
+    "victim": "3320",
+    "attacker": "12389",
+    "start_time": "2017-03-01T00:00:00",
+    "end_time": "2017-03-01T12:00:00",
+    "source": "anomaly",
+    "note": "Deutsche Telekom 前缀劫持"
+  },
+  {
+    "prefix": "8.8.8.0/24",
+    "victim": "15169",
+    "attacker": "None",
+    "start_time": "2024-06-01T00:00:00",
+    "end_time": "2024-06-01T12:00:00",
+    "source": "benign",
+    "note": "Google 正常宣告 8.8.8.0/24"
+  },
+  {
+    "prefix": "1.1.1.0/24",
+    "victim": "13335",
+    "attacker": "None",
+    "start_time": "2024-06-15T00:00:00",
+    "end_time": "2024-06-15T12:00:00",
+    "source": "benign",
+    "note": "Cloudflare 正常宣告 1.1.1.0/24"
+  },
+  {
+    "prefix": "104.244.42.0/24",
+    "victim": "13414",
+    "attacker": "None",
+    "start_time": "2024-07-01T00:00:00",
+    "end_time": "2024-07-01T12:00:00",
+    "source": "benign",
+    "note": "Twitter 正常宣告"
+  },
+  {
+    "prefix": "54.239.0.0/16",
+    "victim": "16509",
+    "attacker": "None",
+    "start_time": "2024-07-15T00:00:00",
+    "end_time": "2024-07-15T12:00:00",
+    "source": "benign",
+    "note": "Amazon 正常宣告"
+  },
+  {
+    "prefix": "129.250.0.0/16",
+    "victim": "2914",
+    "attacker": "None",
+    "start_time": "2024-08-01T00:00:00",
+    "end_time": "2024-08-01T12:00:00",
+    "source": "benign",
+    "note": "NTT 正常宣告"
+  }
+]

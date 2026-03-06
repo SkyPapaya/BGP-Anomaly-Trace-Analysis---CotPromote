@@ -1,0 +1,92 @@
+[
+  {
+    "case_id": "LEAK-R-01",
+    "case_name": "Cloudflare Verizon Route Leak 2019",
+    "event_type": "LEAK",
+    "source_type": "real",
+    "reference": "Cloudflare/Verizon incident 2019",
+    "event": {
+      "case_name": "Cloudflare Verizon Route Leak 2019",
+      "event_type": "LEAK",
+      "is_real": true,
+      "prefix": "1.1.1.0/24",
+      "victim": "13335",
+      "attacker": "33154",
+      "start_time": "2019-06-24T10:00:00",
+      "end_time": "2019-06-24T14:00:00",
+      "source": "anomaly"
+    }
+  },
+  {
+    "case_id": "LEAK-R-02",
+    "case_name": "Google MainOne Route Leak 2018",
+    "event_type": "LEAK",
+    "source_type": "real",
+    "reference": "Google/MainOne incident 2018",
+    "event": {
+      "case_name": "Google MainOne Route Leak 2018",
+      "event_type": "LEAK",
+      "is_real": true,
+      "prefix": "216.58.200.0/24",
+      "victim": "15169",
+      "attacker": "37282",
+      "start_time": "2018-11-12T18:00:00",
+      "end_time": "2018-11-12T23:00:00",
+      "source": "anomaly"
+    }
+  },
+  {
+    "case_id": "LEAK-R-03",
+    "case_name": "China Telecom Routing Incident 2010",
+    "event_type": "LEAK",
+    "source_type": "real",
+    "reference": "China Telecom 2010 global routing incident",
+    "event": {
+      "case_name": "China Telecom Routing Incident 2010",
+      "event_type": "LEAK",
+      "is_real": true,
+      "prefix": "54.239.0.0/16",
+      "victim": "16509",
+      "attacker": "4134",
+      "start_time": "2010-04-06T00:00:00",
+      "end_time": "2010-04-06T08:00:00",
+      "source": "anomaly"
+    }
+  },
+  {
+    "case_id": "LEAK-R-04",
+    "case_name": "Google Leak via Pakistan AS39412 2022",
+    "event_type": "LEAK",
+    "source_type": "real",
+    "reference": "Google route leak event related to AS39412",
+    "event": {
+      "case_name": "Google Leak via Pakistan AS39412 2022",
+      "event_type": "LEAK",
+      "is_real": true,
+      "prefix": "8.8.8.0/24",
+      "victim": "15169",
+      "attacker": "39412",
+      "start_time": "2022-05-17T00:00:00",
+      "end_time": "2022-05-17T06:00:00",
+      "source": "anomaly"
+    }
+  },
+  {
+    "case_id": "LEAK-R-05",
+    "case_name": "AWS Route Leak 2018",
+    "event_type": "LEAK",
+    "source_type": "real",
+    "reference": "AWS-related route leak record",
+    "event": {
+      "case_name": "AWS Route Leak 2018",
+      "event_type": "LEAK",
+      "is_real": true,
+      "prefix": "52.94.0.0/16",
+      "victim": "16509",
+      "attacker": "38634",
+      "start_time": "2018-11-06T00:00:00",
+      "end_time": "2018-11-06T04:00:00",
+      "source": "anomaly"
+    }
+  }
+]

@@ -9,11 +9,12 @@ import aiofiles
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tools.config_loader import get_entities
+from tools.project_paths import FORENSICS_CASES_FILE
 
 # --- 配置 ---
-API_KEY = "sk-9944c48494394db6b8bc31b40f8a710f" 
+API_KEY = os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY", "")
 BASE_URL = "https://api.deepseek.com"
-OUTPUT_FILE = "data/forensics_cases.jsonl"
+OUTPUT_FILE = str(FORENSICS_CASES_FILE)
 CONCURRENCY = 10
 
 SYSTEM_PROMPT = """
@@ -48,6 +49,8 @@ SYSTEM_PROMPT = """
 
 class ForensicsGenerator:
     def __init__(self):
+        if not API_KEY:
+            raise ValueError("缺少 API Key，请设置环境变量 DEEPSEEK_API_KEY 或 OPENAI_API_KEY。")
         self.client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
         self.sem = asyncio.Semaphore(CONCURRENCY)
 

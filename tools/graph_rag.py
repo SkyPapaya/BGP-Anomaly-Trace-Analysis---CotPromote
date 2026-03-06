@@ -1,19 +1,21 @@
 # tools/graph_rag.py
 from neo4j import GraphDatabase
 import logging
+import os
 
 # 配置日志
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger("Neo4j_RAG")
 
 class BGPGraphRAG:
-    def __init__(self, uri="bolt://localhost:7687", user="neo4j", password="whm161122309"):
+    def __init__(self, uri="bolt://localhost:7687", user="neo4j", password=None):
         """
         初始化 Neo4j 连接并注入初始数据
         """
         self.driver = None
+        neo4j_password = password if password is not None else os.getenv("NEO4J_PASSWORD", "neo4j")
         try:
-            self.driver = GraphDatabase.driver(uri, auth=(user, password))
+            self.driver = GraphDatabase.driver(uri, auth=(user, neo4j_password))
             # 验证连接
             self.driver.verify_connectivity()
             print("✅ [Neo4j] 数据库连接成功！")

@@ -8,16 +8,19 @@ from datetime import datetime
 from openai import AsyncOpenAI
 from tools.bgp_toolkit import BGPToolKit
 from tools.rag_manager import RAGManager
+from tools.project_paths import RAG_DB_DIR, REPORT_FORENSICS_DIR
 
 # --- 配置 ---
-API_KEY = "sk-9944c48494394db6b8bc31b40f8a710f"
+API_KEY = os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY", "")
 BASE_URL = "https://api.deepseek.com"
 
 class BGPAgent:
-    def __init__(self, report_dir="./report"):
+    def __init__(self, report_dir=None):
         """
         初始化 BGP 溯源 Agent
         """
+        if not API_KEY:
+            raise ValueError("缺少 API Key，请设置环境变量 DEEPSEEK_API_KEY 或 OPENAI_API_KEY。")
         self.client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
         
         # 1. 初始化工具箱
@@ -25,15 +28,14 @@ class BGPAgent:
         
         # 2. 初始化 RAG (指向溯源专用数据库)
         # 注意: 请确保你运行了 gen_forensics_data.py 并构建了此数据库
-        db_path = "./rag_db"
+        db_path = str(RAG_DB_DIR)
         
         # 为了防止目录不存在报错，加个判断，如果新库不存在则回退到默认
         if not os.path.exists(db_path):
-            print(f"⚠️ [Warning] 溯源数据库 {db_path} 未找到，尝试使用默认 ./rag_db")
-            db_path = "./rag_db"
+            print(f"⚠️ [Warning] 溯源数据库 {db_path} 未找到。")
             
         self.rag = RAGManager(db_path=db_path)
-        self.report_dir = report_dir
+        self.report_dir = report_dir or str(REPORT_FORENSICS_DIR)
 
         # ==========================================
         # 🎯 System Prompt: 溯源专家设定（单条）

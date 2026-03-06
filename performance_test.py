@@ -13,15 +13,12 @@ import os
 import sys
 from bgp_agent import BGPAgent
 from tabulate import tabulate
+from tools.project_paths import EVENTS_DIR, TEST_CASES_FILE
 
 try:
     from tqdm import tqdm
 except ImportError:
     tqdm = None
-
-TEST_CASES_FILE = "data/test_cases.json"
-EVENTS_DIR = "data/events"
-
 
 def load_test_cases():
     """从本地 JSON 加载测试案例"""

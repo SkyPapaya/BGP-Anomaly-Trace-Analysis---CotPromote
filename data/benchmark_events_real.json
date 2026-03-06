@@ -1,0 +1,122 @@
+[
+  {
+    "case_name": "YouTube Pakistan Telecom Hijack 2008",
+    "event_type": "HIJACK",
+    "is_real": true,
+    "reference": "Pakistan Telecom 2008 YouTube Hijack",
+    "prefix": "208.65.153.0/24",
+    "victim": "36561",
+    "attacker": "17557",
+    "start_time": "2008-02-24T00:00:00",
+    "end_time": "2008-02-24T02:00:00",
+    "source": "anomaly"
+  },
+  {
+    "case_name": "Google Prefix Hijack 2005",
+    "event_type": "HIJACK",
+    "is_real": true,
+    "reference": "Google 2005 incident",
+    "prefix": "64.233.161.0/24",
+    "victim": "15169",
+    "attacker": "174",
+    "start_time": "2005-05-07T14:37:00",
+    "end_time": "2005-05-07T16:37:00",
+    "source": "anomaly"
+  },
+  {
+    "case_name": "Indosat Google DNS Hijack 2014",
+    "event_type": "HIJACK",
+    "is_real": true,
+    "reference": "Indosat 2014 hijack",
+    "prefix": "8.8.8.0/24",
+    "victim": "15169",
+    "attacker": "4761",
+    "start_time": "2014-04-01T08:00:00",
+    "end_time": "2014-04-01T18:00:00",
+    "source": "anomaly"
+  },
+  {
+    "case_name": "Rostelecom Cloudflare Hijack 2019",
+    "event_type": "HIJACK",
+    "is_real": true,
+    "reference": "Rostelecom 2019 incident",
+    "prefix": "1.1.1.0/24",
+    "victim": "13335",
+    "attacker": "12389",
+    "start_time": "2019-06-01T08:00:00",
+    "end_time": "2019-06-01T18:00:00",
+    "source": "anomaly"
+  },
+  {
+    "case_name": "Cloudflare Verizon Route Leak 2019",
+    "event_type": "LEAK",
+    "is_real": true,
+    "reference": "Cloudflare/Verizon leak 2019",
+    "prefix": "1.1.1.0/24",
+    "victim": "13335",
+    "attacker": "33154",
+    "start_time": "2019-06-24T10:00:00",
+    "end_time": "2019-06-24T14:00:00",
+    "source": "anomaly"
+  },
+  {
+    "case_name": "Google MainOne Route Leak 2018",
+    "event_type": "LEAK",
+    "is_real": true,
+    "reference": "Google/MainOne leak 2018",
+    "prefix": "8.8.8.0/24",
+    "victim": "15169",
+    "attacker": "37282",
+    "start_time": "2018-11-12T18:00:00",
+    "end_time": "2018-11-12T23:00:00",
+    "source": "anomaly"
+  },
+  {
+    "case_name": "China Telecom Leak 2010",
+    "event_type": "LEAK",
+    "is_real": true,
+    "reference": "China Telecom 2010 routing incident",
+    "prefix": "54.239.0.0/16",
+    "victim": "16509",
+    "attacker": "4134",
+    "start_time": "2010-04-06T00:00:00",
+    "end_time": "2010-04-06T08:00:00",
+    "source": "anomaly"
+  },
+  {
+    "case_name": "Benign Google Announcement",
+    "event_type": "BENIGN",
+    "is_real": true,
+    "reference": "Normal operation",
+    "prefix": "8.8.8.0/24",
+    "victim": "15169",
+    "attacker": "None",
+    "start_time": "2024-06-01T00:00:00",
+    "end_time": "2024-06-01T12:00:00",
+    "source": "benign"
+  },
+  {
+    "case_name": "Benign Cloudflare Announcement",
+    "event_type": "BENIGN",
+    "is_real": true,
+    "reference": "Normal operation",
+    "prefix": "1.1.1.0/24",
+    "victim": "13335",
+    "attacker": "None",
+    "start_time": "2024-06-15T00:00:00",
+    "end_time": "2024-06-15T12:00:00",
+    "source": "benign"
+  },
+  {
+    "case_name": "Benign Twitter Announcement",
+    "event_type": "BENIGN",
+    "is_real": true,
+    "reference": "Normal operation",
+    "prefix": "104.244.42.0/24",
+    "victim": "13414",
+    "attacker": "None",
+    "start_time": "2024-07-01T00:00:00",
+    "end_time": "2024-07-01T12:00:00",
+    "source": "benign"
+  }
+]

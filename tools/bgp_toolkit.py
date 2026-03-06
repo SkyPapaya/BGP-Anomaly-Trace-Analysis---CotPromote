@@ -30,8 +30,8 @@ class BGPToolKit:
         # 如果环境中有 Neo4j 且代码存在，初始化图分析引擎
         if GRAPH_RAG_AVAILABLE:
             try:
-                # 注意：确保这里的密码和你 Docker 设置的一致 (whm161122309)
-                self.graph_engine = BGPGraphRAG(password="whm161122309")
+                # 优先从环境变量读取 Neo4j 密码
+                self.graph_engine = BGPGraphRAG(password=os.getenv("NEO4J_PASSWORD", "neo4j"))
             except Exception as e:
                 print(f"❌ [Error] Neo4j 连接失败: {e}")
                 self.graph_engine = None
@@ -202,7 +202,7 @@ class BGPToolKit:
             observed = ctx.get("detected_origin", "Unknown")
             expected = ctx.get("expected_origin", "Unknown")
             return (f"[Graph 离线] Neo4j 未连接，无法查询真实拓扑。"
-                    f"建议运行 tools/import_real_word.py 导入 CAIDA 数据后启用 Neo4j。"
+                    f"请先导入 CAIDA 拓扑数据并启动 Neo4j 后再启用图分析。"
                     f" Observed AS{observed} vs Expected AS{expected}。")
 
     # ==========================================
